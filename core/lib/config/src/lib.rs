@@ -3,7 +3,8 @@
 pub use crate::configs::{
     contracts::chain::AllContractsConfig as ContractsConfig, ApiConfig, AvailConfig,
     BaseTokenAdjusterConfig, CelestiaConfig, ContractVerifierConfig, DAClientConfig,
-    DADispatcherConfig, DBConfig, EigenConfig, EthConfig, EthWatchConfig,
+    // SYSCOIN
+    DADispatcherConfig, DBConfig, EigenConfig, BitcoinDAConfig, EthConfig, EthWatchConfig,
     ExternalProofIntegrationApiConfig, GasAdjusterConfig, GenesisConfig, ObjectStoreConfig,
     PostgresConfig, SnapshotsCreatorConfig,
 };

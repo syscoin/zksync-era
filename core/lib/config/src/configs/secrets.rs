@@ -3,7 +3,8 @@ use zksync_basic_types::{secrets::APIKey, url::SensitiveUrl};
 
 use crate::configs::{
     consensus::ConsensusSecrets,
-    da_client::{avail::AvailSecrets, celestia::CelestiaSecrets, eigen::EigenSecrets},
+    // SYSCOIN
+    da_client::{avail::AvailSecrets, celestia::CelestiaSecrets, eigen::EigenSecrets, bitcoin::BitcoinDASecrets},
 };
 
 #[derive(Debug, Clone, PartialEq)]
@@ -24,6 +25,8 @@ pub enum DataAvailabilitySecrets {
     Avail(AvailSecrets),
     Celestia(CelestiaSecrets),
     Eigen(EigenSecrets),
+    // SYSCOIN
+    BitcoinDA(BitcoinDASecrets),
 }
 
 #[derive(Debug, Clone, PartialEq)]

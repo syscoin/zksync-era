@@ -3,4 +3,6 @@ pub mod celestia;
 pub mod eigen;
 pub mod no_da;
 pub mod object_store;
+// SYSCOIN
+pub mod bitcoin;
 mod utils;

@@ -1,0 +1,45 @@
+
+use zksync_config::{configs::da_client::bitcoin::BitcoinDASecrets, BitcoinDAConfig};
+use zksync_da_clients::bitcoin::BitcoinDAClient;
+use zksync_da_client::DataAvailabilityClient;
+use zksync_node_framework::implementations::resources::da_client::DAClientResource;
+use zksync_node_framework::{IntoContext, wiring_layer::{WiringError, WiringLayer}};
+
+#[derive(Debug)] // No longer Default
+pub struct BitcoinDAWiringLayer {
+    config: BitcoinDAServerConfig,
+    secrets: BitcoinDASecrets,
+}
+
+impl BitcoinDAWiringLayer {
+    pub fn new(config: BitcoinDAServerConfig, secrets: BitcoinDASecrets) -> Self {
+        Self { config, secrets }
+    }
+}
+
+#[derive(Debug, IntoContext)]
+#[context(crate = crate)] // Assuming node_framework is the current crate context for IntoContext proc macro
+pub struct Output {
+    pub client: DAClientResource,
+}
+
+
+#[async_trait::async_trait]
+impl WiringLayer for BitcoinDAWiringLayer {
+    type Input = (); // Assuming no specific input is required from other layers for now
+    type Output = Output;
+
+    fn layer_name(&self) -> &'static str {
+        "bitcoin_client_layer"
+    }
+
+    async fn wire(self, _input: Self::Input) -> Result<Self::Output, WiringError> {
+        // Pass the stored config and secrets to the client's new method
+        let client_result = BitcoinDAClient::new(self.config, self.secrets);
+        let client: Box<dyn DataAvailabilityClient> = Box::new(client_result.map_err(|e| WiringError::Internal(e.into()))?);
+
+        Ok(Self::Output {
+            client: DAClientResource(client),
+        })
+    }
+} 

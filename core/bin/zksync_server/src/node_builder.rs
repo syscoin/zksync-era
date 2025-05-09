@@ -32,7 +32,8 @@ use zksync_node_framework::{
         consensus::MainNodeConsensusLayer,
         contract_verification_api::ContractVerificationApiLayer,
         da_clients::{
-            avail::AvailWiringLayer, celestia::CelestiaWiringLayer, eigen::EigenWiringLayer,
+            // SYSCOIN
+            avail::AvailWiringLayer, celestia::CelestiaWiringLayer, eigen::EigenWiringLayer, bitcoin::BitcoinDAWiringLayer,
             no_da::NoDAClientWiringLayer, object_store::ObjectStorageClientWiringLayer,
         },
         da_dispatcher::DataAvailabilityDispatcherLayer,
@@ -148,6 +149,8 @@ impl MainNodeBuilder {
             Some(da_client_config) => Ok(match da_client_config {
                 DAClientConfig::Avail(_) => PubdataType::Avail,
                 DAClientConfig::Celestia(_) => PubdataType::Celestia,
+                // SYSCOIN
+                DAClientConfig::BitcoinDA(_) => PubdataType::BitcoinDA,
                 DAClientConfig::Eigen(_) => PubdataType::Eigen,
                 DAClientConfig::ObjectStore(_) => PubdataType::ObjectStore,
                 DAClientConfig::NoDA => PubdataType::NoDA,
@@ -621,6 +624,11 @@ impl MainNodeBuilder {
 
         if matches!(da_client_config, DAClientConfig::NoDA) {
             self.node.add_layer(NoDAClientWiringLayer);
+            return Ok(self);
+        }
+        // SYSCOIN
+        if matches!(da_client_config, DAClientConfig::BitcoiNDA) {
+            self.node.add_layer(BitcoinDAWiringLayer::new(config));
             return Ok(self);
         }
 

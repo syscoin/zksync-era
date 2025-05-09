@@ -73,6 +73,8 @@ pub enum DAValidatorType {
     Rollup = 0,
     NoDA = 1,
     Avail = 2,
+    // SYSCOIN
+    BitcoinDA = 3,
 }
 
 impl Serialize for ChainConfig {

@@ -312,7 +312,7 @@ where
     for chunk_start in (from_block..=upto_block).step_by(FEE_HISTORY_MAX_REQUEST_CHUNK) {
         let chunk_end = (chunk_start + FEE_HISTORY_MAX_REQUEST_CHUNK).min(upto_block);
         let chunk_size = chunk_end - chunk_start + 1;
-
+        // SYSCOIN
         let mut fee_history = client
             .fee_history(
                 U64::from(chunk_size),
@@ -346,7 +346,7 @@ where
                 .with_arg("chunk_size", &chunk_size)
                 .with_arg("chunk_end", &chunk_end));
         }
-
+        // SYSCOIN
         if fee_history.base_fee_per_blob_gas.len() != chunk_size + 1 {
             let value = fee_history.base_fee_per_gas.len();
             fee_history.base_fee_per_blob_gas = vec![U256::from(0);value];

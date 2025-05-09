@@ -8,7 +8,8 @@ use zksync_basic_types::{
 };
 use zksync_config::configs::{
     consensus::{ConsensusSecrets, NodeSecretKey, ValidatorSecretKey},
-    da_client::{avail::AvailSecrets, celestia::CelestiaSecrets, eigen::EigenSecrets},
+    // SYSCOIN
+    da_client::{avail::AvailSecrets, celestia::CelestiaSecrets, eigen::EigenSecrets, bitcoin::BitcoinDASecrets},
     secrets::{DataAvailabilitySecrets, Secrets},
     ContractVerifierSecrets, DatabaseSecrets, L1Secrets,
 };
@@ -144,6 +145,14 @@ impl ProtoRepr for proto::DataAvailabilitySecrets {
             DaSecrets::Eigen(eigen) => DataAvailabilitySecrets::Eigen(EigenSecrets {
                 private_key: PrivateKey::from(
                     required(&eigen.private_key)
+                        .context("private_key")?
+                        .as_str(),
+                ),
+            }),
+            // SYSCOIN
+            DaSecrets::BitcoinDA(bitcoin) => DataAvailabilitySecrets::BitcoinDA(BitcoinDASecrets {
+                private_key: PrivateKey::from(
+                    required(&bitcoin.private_key)
                         .context("private_key")?
                         .as_str(),
                 ),

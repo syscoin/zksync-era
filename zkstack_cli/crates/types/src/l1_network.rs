@@ -35,7 +35,8 @@ impl L1Network {
             L1Network::Localhost => 9,
             L1Network::Sepolia => 11_155_111,
             L1Network::Holesky => 17000,
-            L1Network::Mainnet => 1,
+            // SYSCOIN
+            L1Network::Mainnet => 57,
         }
     }
 
@@ -46,6 +47,15 @@ impl L1Network {
                 Some(Address::from_str("0x73d59fe232fce421d1365d6a5beec49acde3d0d9").unwrap())
             }
             L1Network::Mainnet => None, // TODO: add mainnet address after it is known
+        }
+    }
+    // SYSCOIN
+    pub fn bitcoin_l1_da_validator_addr(&self) -> Option<Address> {
+        match self {
+            &L1Network::Localhost => None,
+            &L1Network::Sepolia => None,
+            &L1Network::Holesky => None, 
+            &L1Network::Mainnet => None, // TODO: add mainnet address after it is known
         }
     }
 }

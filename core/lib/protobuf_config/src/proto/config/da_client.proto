@@ -69,5 +69,7 @@ message DataAvailabilityClient {
     CelestiaConfig celestia = 3;
     EigenConfig eigen = 4;
     NoDAConfig no_da = 5;
+    // SYSCOIN
+    BitcoinDAConfig bitcoin = 6;
   }
 }

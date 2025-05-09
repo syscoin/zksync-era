@@ -61,6 +61,8 @@ pub enum ClientType {
     Celestia,
     Eigen,
     ObjectStore,
+    // SYSCOIN
+    BitcoinDA,
 }
 
 impl ClientType {
@@ -71,6 +73,8 @@ impl ClientType {
             ClientType::Celestia => PubdataType::Celestia,
             ClientType::Eigen => PubdataType::Eigen,
             ClientType::ObjectStore => PubdataType::ObjectStore,
+            // SYSCOIN
+            ClientType::BitcoinDA => PubdataType::BitcoinDA,
         }
     }
 }

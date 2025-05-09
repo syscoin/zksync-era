@@ -68,6 +68,7 @@ impl GasAdjusterFeesOracle {
         }
         let priority_fee_per_gas = self.gas_adjuster.get_blob_tx_priority_fee();
         let blob_base_fee_per_gas = self.gas_adjuster.get_blob_tx_blob_base_fee();
+        // SYSCOIN
         // self.assert_fee_is_not_zero(blob_base_fee_per_gas, "blob");
         let blob_base_fee_per_gas = Some(blob_base_fee_per_gas);
 

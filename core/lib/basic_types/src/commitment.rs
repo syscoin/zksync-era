@@ -24,6 +24,8 @@ impl From<PubdataType> for L1BatchCommitmentMode {
             | PubdataType::Avail
             | PubdataType::Celestia
             | PubdataType::Eigen
+            // SYSCOIN
+            | PubdataType::BitcoinDA
             | PubdataType::ObjectStore => L1BatchCommitmentMode::Validium,
         }
     }
@@ -79,6 +81,8 @@ pub enum PubdataType {
     Avail,
     Celestia,
     Eigen,
+    // SYSCOIN
+    BitcoinDA,
     ObjectStore,
 }
 
@@ -92,8 +96,10 @@ impl FromStr for PubdataType {
             "Avail" => Ok(Self::Avail),
             "Celestia" => Ok(Self::Celestia),
             "Eigen" => Ok(Self::Eigen),
+            // SYSCOIN
+            "BitcoinDA" => Ok(Self::BitcoinDA),
             "ObjectStore" => Ok(Self::ObjectStore),
-            _ => Err("Incorrect DA client type; expected one of `Rollup`, `NoDA`, `Avail`, `Celestia`, `Eigen`, `ObjectStore`"),
+            _ => Err("Incorrect DA client type; expected one of `Rollup`, `NoDA`, `Avail`, `Celestia`, `Eigen`, `BitcoinDA`, `ObjectStore`"),
         }
     }
 }

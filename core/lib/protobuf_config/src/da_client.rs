@@ -7,7 +7,9 @@ use zksync_config::configs::{
         avail::{AvailClientConfig, AvailConfig, AvailDefaultConfig, AvailGasRelayConfig},
         celestia::CelestiaConfig,
         eigen::EigenConfig,
-        DAClientConfig::{Avail, Celestia, Eigen, NoDA, ObjectStore},
+        // SYSCOIN
+        bitcoin::BitcoinDAConfig,
+        DAClientConfig::{Avail, Celestia, Eigen, BitcoinDA, NoDA, ObjectStore},
     },
 };
 use zksync_protobuf::{required, ProtoRepr};
@@ -61,6 +63,10 @@ impl ProtoRepr for proto::DataAvailabilityClient {
                 namespace: required(&conf.namespace).context("namespace")?.clone(),
                 chain_id: required(&conf.chain_id).context("chain_id")?.clone(),
                 timeout_ms: *required(&conf.timeout_ms).context("timeout_ms")?,
+            }),
+            // SYSCOIN
+            proto::data_availability_client::Config::BitcoinDA(conf) => BitcoinDA(BitcoinDAConfig {
+                api_node_url: required(&conf.api_node_url).context("namespace")?.clone(),
             }),
             proto::data_availability_client::Config::Eigen(conf) => Eigen(EigenConfig {
                 disperser_rpc: required(&conf.disperser_rpc)
@@ -141,6 +147,12 @@ impl ProtoRepr for proto::DataAvailabilityClient {
                     namespace: Some(config.namespace.clone()),
                     chain_id: Some(config.chain_id.clone()),
                     timeout_ms: Some(config.timeout_ms),
+                })
+            }
+            // SYSCOIN
+            BitcoinDA(config) => {
+                proto::data_availability_client::Config::BitcoinDA(proto::BitcoinDAConfig {
+                    api_node_url: Some(config.api_node_url.clone()),
                 })
             }
             Eigen(config) => proto::data_availability_client::Config::Eigen(proto::EigenConfig {

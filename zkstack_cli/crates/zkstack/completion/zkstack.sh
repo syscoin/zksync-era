@@ -2071,7 +2071,7 @@ _zkstack() {
                     return 0
                     ;;
                 --validium-type)
-                    COMPREPLY=($(compgen -W "no-da avail eigen-da" -- "${cur}"))
+                    COMPREPLY=($(compgen -W "no-da avail eigen-da bitcoin" -- "${cur}"))
                     return 0
                     ;;
                 --server-command)
@@ -5211,7 +5211,7 @@ _zkstack() {
                     return 0
                     ;;
                 --validium-type)
-                    COMPREPLY=($(compgen -W "no-da avail eigen-da" -- "${cur}"))
+                    COMPREPLY=($(compgen -W "no-da avail eigen-da bitcoin" -- "${cur}"))
                     return 0
                     ;;
                 --support-l2-legacy-shared-bridge-test)
