@@ -349,7 +349,7 @@ where
         // SYSCOIN
         if fee_history.base_fee_per_blob_gas.len() != chunk_size + 1 {
             let value = fee_history.base_fee_per_gas.len();
-            fee_history.base_fee_per_blob_gas = vec![U256::from(0);value];
+            fee_history.base_fee_per_blob_gas = vec![U256::from(0); value];
         }
 
         // Per specification, the values should always be provided, and must be 0 for blocks

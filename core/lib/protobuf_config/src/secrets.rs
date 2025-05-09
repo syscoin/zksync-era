@@ -9,9 +9,14 @@ use zksync_basic_types::{
 use zksync_config::configs::{
     consensus::{ConsensusSecrets, NodeSecretKey, ValidatorSecretKey},
     // SYSCOIN
-    da_client::{avail::AvailSecrets, celestia::CelestiaSecrets, eigen::EigenSecrets, bitcoin::BitcoinDASecrets},
+    da_client::{
+        avail::AvailSecrets, bitcoin::BitcoinDASecrets, celestia::CelestiaSecrets,
+        eigen::EigenSecrets,
+    },
     secrets::{DataAvailabilitySecrets, Secrets},
-    ContractVerifierSecrets, DatabaseSecrets, L1Secrets,
+    ContractVerifierSecrets,
+    DatabaseSecrets,
+    L1Secrets,
 };
 use zksync_protobuf::{required, ProtoRepr};
 

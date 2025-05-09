@@ -80,7 +80,10 @@ pub async fn init_configs(
 
     match &init_args.validium_config {
         // SYSCOIN
-        None | Some(ValidiumType::NoDA) | Some(ValidiumType::EigenDA) | Some(ValidiumType::BitcoinDA) => {
+        None
+        | Some(ValidiumType::NoDA)
+        | Some(ValidiumType::EigenDA)
+        | Some(ValidiumType::BitcoinDA) => {
             general_config.remove_da_client();
         }
         Some(ValidiumType::Avail((avail_config, _))) => {
@@ -112,7 +115,10 @@ pub async fn init_configs(
     set_consensus_secrets(&mut secrets, &consensus_keys)?;
     match &init_args.validium_config {
         // SYSCOIN
-        None | Some(ValidiumType::NoDA) | Some(ValidiumType::EigenDA) | Some(ValidiumType::BitcoinDA) => { /* Do nothing */ }
+        None
+        | Some(ValidiumType::NoDA)
+        | Some(ValidiumType::EigenDA)
+        | Some(ValidiumType::BitcoinDA) => { /* Do nothing */ }
         Some(ValidiumType::Avail((_, avail_secrets))) => {
             secrets.set_avail_secrets(avail_secrets)?;
         }

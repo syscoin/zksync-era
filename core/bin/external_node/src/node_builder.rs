@@ -25,8 +25,12 @@ use zksync_node_framework::{
         consistency_checker::ConsistencyCheckerLayer,
         da_clients::{
             // SYSCOIN
-            avail::AvailWiringLayer, celestia::CelestiaWiringLayer, eigen::EigenWiringLayer, bitcoin::BitcoinDAWiringLayer,
-            no_da::NoDAClientWiringLayer, object_store::ObjectStorageClientWiringLayer,
+            avail::AvailWiringLayer,
+            bitcoin::BitcoinDAWiringLayer,
+            celestia::CelestiaWiringLayer,
+            eigen::EigenWiringLayer,
+            no_da::NoDAClientWiringLayer,
+            object_store::ObjectStorageClientWiringLayer,
         },
         data_availability_fetcher::DataAvailabilityFetcherLayer,
         healtcheck_server::HealthCheckLayer,
@@ -360,7 +364,8 @@ impl ExternalNodeBuilder {
             }
             // SYSCOIN
             (DAClientConfig::BitcoinDA(config), DataAvailabilitySecrets::BitcoinDA(secret)) => {
-                self.node.add_layer(BitcoinDAWiringLayer::new(config, secret));
+                self.node
+                    .add_layer(BitcoinDAWiringLayer::new(config, secret));
             }
             _ => bail!("invalid pair of da_client and da_secrets"),
         }

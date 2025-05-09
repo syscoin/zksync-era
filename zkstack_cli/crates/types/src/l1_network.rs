@@ -54,7 +54,7 @@ impl L1Network {
         match self {
             &L1Network::Localhost => None,
             &L1Network::Sepolia => None,
-            &L1Network::Holesky => None, 
+            &L1Network::Holesky => None,
             &L1Network::Mainnet => None, // TODO: add mainnet address after it is known
         }
     }

@@ -45,7 +45,7 @@ pub enum ValidiumType {
     Avail((AvailConfig, AvailSecrets)),
     EigenDA,
     // SYSCOIN
-    BitcoinDA
+    BitcoinDA,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, EnumIter, Display, ValueEnum)]

@@ -33,8 +33,12 @@ use zksync_node_framework::{
         contract_verification_api::ContractVerificationApiLayer,
         da_clients::{
             // SYSCOIN
-            avail::AvailWiringLayer, celestia::CelestiaWiringLayer, eigen::EigenWiringLayer, bitcoin::BitcoinDAWiringLayer,
-            no_da::NoDAClientWiringLayer, object_store::ObjectStorageClientWiringLayer,
+            avail::AvailWiringLayer,
+            bitcoin::BitcoinDAWiringLayer,
+            celestia::CelestiaWiringLayer,
+            eigen::EigenWiringLayer,
+            no_da::NoDAClientWiringLayer,
+            object_store::ObjectStorageClientWiringLayer,
         },
         da_dispatcher::DataAvailabilityDispatcherLayer,
         eth_sender::{EthTxAggregatorLayer, EthTxManagerLayer},

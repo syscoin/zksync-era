@@ -4,7 +4,10 @@ use zksync_basic_types::{secrets::APIKey, url::SensitiveUrl};
 use crate::configs::{
     consensus::ConsensusSecrets,
     // SYSCOIN
-    da_client::{avail::AvailSecrets, celestia::CelestiaSecrets, eigen::EigenSecrets, bitcoin::BitcoinDASecrets},
+    da_client::{
+        avail::AvailSecrets, bitcoin::BitcoinDASecrets, celestia::CelestiaSecrets,
+        eigen::EigenSecrets,
+    },
 };
 
 #[derive(Debug, Clone, PartialEq)]
