@@ -34,7 +34,7 @@ use zksync_node_framework::{
         da_clients::{
             // SYSCOIN
             avail::AvailWiringLayer,
-            bitcoin::BitcoinDAWiringLayer,
+            bitcoin::BitcoinWiringLayer,
             celestia::CelestiaWiringLayer,
             eigen::EigenWiringLayer,
             no_da::NoDAClientWiringLayer,
@@ -154,7 +154,7 @@ impl MainNodeBuilder {
                 DAClientConfig::Avail(_) => PubdataType::Avail,
                 DAClientConfig::Celestia(_) => PubdataType::Celestia,
                 // SYSCOIN
-                DAClientConfig::BitcoinDA(_) => PubdataType::BitcoinDA,
+                DAClientConfig::Bitcoin(_) => PubdataType::Bitcoin,
                 DAClientConfig::Eigen(_) => PubdataType::Eigen,
                 DAClientConfig::ObjectStore(_) => PubdataType::ObjectStore,
                 DAClientConfig::NoDA => PubdataType::NoDA,
@@ -631,8 +631,8 @@ impl MainNodeBuilder {
             return Ok(self);
         }
         // SYSCOIN
-        if matches!(da_client_config, DAClientConfig::BitcoiNDA) {
-            self.node.add_layer(BitcoinDAWiringLayer::new(config));
+        if matches!(da_client_config, DAClientConfig::Bitcoin) {
+            self.node.add_layer(BitcoinWiringLayer::new(config));
             return Ok(self);
         }
 

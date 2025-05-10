@@ -5,7 +5,7 @@ pub use crate::configs::{
     ApiConfig,
     AvailConfig,
     BaseTokenAdjusterConfig,
-    BitcoinDAConfig,
+    BitcoinConfig,
     CelestiaConfig,
     ContractVerifierConfig,
     DAClientConfig,

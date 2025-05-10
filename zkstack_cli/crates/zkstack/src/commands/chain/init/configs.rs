@@ -83,7 +83,7 @@ pub async fn init_configs(
         None
         | Some(ValidiumType::NoDA)
         | Some(ValidiumType::EigenDA)
-        | Some(ValidiumType::BitcoinDA) => {
+        | Some(ValidiumType::Bitcoin) => {
             general_config.remove_da_client();
         }
         Some(ValidiumType::Avail((avail_config, _))) => {
@@ -118,7 +118,7 @@ pub async fn init_configs(
         None
         | Some(ValidiumType::NoDA)
         | Some(ValidiumType::EigenDA)
-        | Some(ValidiumType::BitcoinDA) => { /* Do nothing */ }
+        | Some(ValidiumType::Bitcoin) => { /* Do nothing */ }
         Some(ValidiumType::Avail((_, avail_secrets))) => {
             secrets.set_avail_secrets(avail_secrets)?;
         }

@@ -1,6 +1,6 @@
 use serde::Deserialize;
-
-use crate::{AvailConfig, CelestiaConfig, EigenConfig, ObjectStoreConfig};
+// SYSCOIN
+use crate::{AvailConfig, CelestiaConfig, EigenConfig, BitcoinConfig, ObjectStoreConfig};
 
 pub mod avail;
 pub mod celestia;
@@ -14,7 +14,7 @@ pub const EIGEN_CLIENT_CONFIG_NAME: &str = "Eigen";
 pub const OBJECT_STORE_CLIENT_CONFIG_NAME: &str = "ObjectStore";
 pub const NO_DA_CLIENT_CONFIG_NAME: &str = "NoDA";
 // SYSCOIN
-pub const BITCOINDA_CLIENT_CONFIG_NAME: &str = "BitcoinDA";
+pub const BITCOIN_CLIENT_CONFIG_NAME: &str = "Bitcoin";
 
 #[derive(Debug, Clone, PartialEq, Deserialize)]
 pub enum DAClientConfig {
@@ -22,7 +22,7 @@ pub enum DAClientConfig {
     Celestia(CelestiaConfig),
     Eigen(EigenConfig),
     // SYSCOIN
-    BitcoinDA(BitcoinDAConfig),
+    Bitcoin(BitcoinConfig),
     ObjectStore(ObjectStoreConfig),
     NoDA,
 }
@@ -33,8 +33,8 @@ impl From<AvailConfig> for DAClientConfig {
     }
 }
 // SYSCOIN
-impl From<BitcoinDAConfig> for DAClientConfig {
-    fn from(config: BitcoinDAConfig) -> Self {
-        Self::BitcoinDA(config)
+impl From<BitcoinConfig> for DAClientConfig {
+    fn from(config: BitcoinConfig) -> Self {
+        Self::Bitcoin(config)
     }
 }

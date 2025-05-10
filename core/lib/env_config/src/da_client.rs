@@ -10,13 +10,13 @@ use zksync_config::{
                 AVAIL_GAS_RELAY_CLIENT_NAME,
             },
             // SYSCOIN
-            bitcoin::BitcoinDASecrets,
+            bitcoin::BitcoinSecrets,
             celestia::CelestiaSecrets,
             eigen::EigenSecrets,
             DAClientConfig,
             AVAIL_CLIENT_CONFIG_NAME,
             // SYSCOIN
-            BITCOINDA_CLIENT_CONFIG_NAME,
+            BITCOIN_CLIENT_CONFIG_NAME,
             CELESTIA_CLIENT_CONFIG_NAME,
             EIGEN_CLIENT_CONFIG_NAME,
             NO_DA_CLIENT_CONFIG_NAME,
@@ -24,6 +24,8 @@ use zksync_config::{
         },
         secrets::DataAvailabilitySecrets,
         AvailConfig,
+        // SYSCOIN
+        BitcoinConfig,
     },
     EigenConfig,
 };
@@ -92,10 +94,10 @@ pub fn da_client_config_from_env(prefix: &str) -> anyhow::Result<DAClientConfig>
         }
         NO_DA_CLIENT_CONFIG_NAME => DAClientConfig::NoDA,
         // SYSCOIN
-        BITCOINDA_CLIENT_CONFIG_NAME => {
-            let api_node_url = env::var(format!("{}BITCOINDA_API_NODE_URL", prefix))
-                .with_context(|| format!("Missing environment variable {}BITCOINDA_API_NODE_URL for BitcoinDA client", prefix))?;
-            DAClientConfig::BitcoinDA(BitcoinDAServerConfig { api_node_url })
+        BITCOIN_CLIENT_CONFIG_NAME => {
+            let api_node_url = env::var(format!("{}BITCOIN_API_NODE_URL", prefix))
+                .with_context(|| format!("Missing environment variable {}BITCOIN_API_NODE_URL for Bitcoin client", prefix))?;
+            DAClientConfig::Bitcoin(BitcoinConfig { api_node_url })
         }
         _ => anyhow::bail!("Unknown DA client name: {}", client_tag),
     };
@@ -141,17 +143,11 @@ pub fn da_client_secrets_from_env(prefix: &str) -> anyhow::Result<DataAvailabili
                 .into();
             DataAvailabilitySecrets::Eigen(EigenSecrets { private_key })
         }
-        BITCOINDA_CLIENT_CONFIG_NAME => {
-            let private_key_str =
-                env::var(format!("{}SECRETS_PRIVATE_KEY", prefix)).with_context(|| {
-                    format!(
-                        "Missing environment variable {}SECRETS_PRIVATE_KEY for BitcoinDA client",
-                        prefix
-                    )
-                })?;
-            let private_key = PrivateKey::from_str(&private_key_str)
-                .map_err(|e| anyhow::anyhow!("Failed to parse BitcoinDA private key: {:?}", e))?;
-            DataAvailabilitySecrets::BitcoinDA(BitcoinDASecrets { private_key })
+        BITCOIN_CLIENT_CONFIG_NAME => {
+            let private_key = env::var(format!("{}SECRETS_PRIVATE_KEY", prefix))
+                .context("Bitcoin private key not found")?
+                .into();
+            DataAvailabilitySecrets::Bitcoin(BitcoinSecrets { private_key })
         }
 
         _ => anyhow::bail!("Unknown DA client name: {}", client_tag),

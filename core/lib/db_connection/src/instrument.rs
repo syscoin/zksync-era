@@ -190,7 +190,7 @@ struct InstrumentedData<'a> {
     slow_query_reporting_enabled: bool,
 }
 
-impl<'a> InstrumentedData<'a> {
+impl InstrumentedData<'_> {
     fn new(name: &'static str, location: &'static Location<'static>) -> Self {
         Self {
             name,

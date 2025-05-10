@@ -100,7 +100,7 @@ impl InitArgs {
                 ),
                 Some(da_configs::ValidiumTypeInternal::EigenDA) => Some(ValidiumType::EigenDA),
                 // SYSCOIN
-                Some(da_configs::ValidiumTypeInternal::BitcoinDA) => Some(ValidiumType::BitcoinDA),
+                Some(da_configs::ValidiumTypeInternal::Bitcoin) => Some(ValidiumType::Bitcoin),
             },
             _ => None,
         };

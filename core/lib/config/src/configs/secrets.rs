@@ -5,7 +5,7 @@ use crate::configs::{
     consensus::ConsensusSecrets,
     // SYSCOIN
     da_client::{
-        avail::AvailSecrets, bitcoin::BitcoinDASecrets, celestia::CelestiaSecrets,
+        avail::AvailSecrets, bitcoin::BitcoinSecrets, celestia::CelestiaSecrets,
         eigen::EigenSecrets,
     },
 };
@@ -29,7 +29,7 @@ pub enum DataAvailabilitySecrets {
     Celestia(CelestiaSecrets),
     Eigen(EigenSecrets),
     // SYSCOIN
-    BitcoinDA(BitcoinDASecrets),
+    Bitcoin(BitcoinSecrets),
 }
 
 #[derive(Debug, Clone, PartialEq)]

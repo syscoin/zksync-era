@@ -8,10 +8,11 @@ use async_trait::async_trait;
 use hex::{decode, encode};
 use reqwest::Client;
 use serde::Deserialize;
+use serde::Serialize;
 use serde_json::{json, Value};
-use zksync_basic_types::secrets::ExposeSecret;
 use zksync_config::configs::{
-    da_client::BitcoinDAConfig as BitcoinDAServerConfig, secrets::BitcoinDASecrets,
+    da_client::bitcoin::BitcoinConfig as BitcoinServerConfig, 
+    da_client::bitcoin::BitcoinSecrets,
 };
 use zksync_da_client::{
     types,
@@ -37,17 +38,17 @@ struct BlobResult {
 }
 
 #[derive(Clone)]
-pub struct BitcoinDAClient {
+pub struct BitcoinClient {
     http_client: Arc<Client>,
     rpc_url: String,
     rpc_user: String,
     rpc_password: String,
 }
 
-impl BitcoinDAClient {
+impl BitcoinClient {
     const MAX_BLOB_SIZE: usize = 2 * 1024 * 1024;
 
-    pub fn new(config: BitcoinDAServerConfig, secrets: BitcoinDASecrets) -> anyhow::Result<Self> {
+    pub fn new(config: BitcoinServerConfig, secrets: BitcoinSecrets) -> anyhow::Result<Self> {
         Ok(Self {
             http_client: Arc::new(Client::new()),
             rpc_url: config.api_node_url,
@@ -85,13 +86,13 @@ impl BitcoinDAClient {
 }
 
 #[async_trait]
-impl DataAvailabilityClient for BitcoinDAClient {
+impl DataAvailabilityClient for BitcoinClient {
     async fn dispatch_blob(
         &self,
         _batch_number: u32,
         data: Vec<u8>,
     ) -> Result<DispatchResponse, DAError> {
-        if data.len() > BitcoinDAClient::MAX_BLOB_SIZE {
+        if data.len() > BitcoinClient::MAX_BLOB_SIZE {
             return Err(DAError {
                 error: anyhow!("Blob size exceeds the maximum limit"),
                 is_retriable: false,
@@ -105,9 +106,18 @@ impl DataAvailabilityClient for BitcoinDAClient {
         let rpc_response: CreateBlobResponse = self
             .call_rpc("syscoincreatenevmblob", params)
             .await
-            .map_err(|e| DAError {
-                error: anyhow!("RPC call to syscoincreatenevmblob failed: {}", e),
-                is_retriable: e.is_connect() || e.is_timeout(),
+            .map_err(|e_anyhow: anyhow::Error| {
+                let mut is_retriable = false;
+                // Check if the cause was a reqwest error
+                if let Some(reqwest_err) = e_anyhow.downcast_ref::<reqwest::Error>() {
+                    is_retriable = reqwest_err.is_connect() || reqwest_err.is_timeout();
+                }
+                // You could add more checks here for other error sources if needed
+                // e.g., if e_anyhow.downcast_ref::<MyCustomRetriableError>().is_some() { is_retriable = true; }
+                DAError {
+                    error: anyhow!("RPC call to syscoincreatenevmblob failed: {}", e_anyhow), // Keep original anyhow error for context
+                    is_retriable,
+                }
             })?;
 
         if let Some(err_info) = rpc_response.error {
@@ -123,7 +133,7 @@ impl DataAvailabilityClient for BitcoinDAClient {
 
         match rpc_response.result {
             Some(blob_result) => Ok(DispatchResponse {
-                blob_id: blob_result.versionhash,
+                request_id: blob_result.versionhash,
             }),
             None => Err(DAError {
                 error: anyhow!("Missing result in syscoincreatenevmblob response"),
@@ -146,9 +156,18 @@ impl DataAvailabilityClient for BitcoinDAClient {
         let response: Value = self
             .call_rpc("getnevmblobdata", params)
             .await
-            .map_err(|e| DAError {
-                error: anyhow!("RPC call to getnevmblobdata failed: {}", e),
-                is_retriable: e.is_connect() || e.is_timeout(), // Example: make retriable on network issues
+            .map_err(|e_anyhow: anyhow::Error| {
+                let mut is_retriable = false;
+                // Check if the cause was a reqwest error
+                if let Some(reqwest_err) = e_anyhow.downcast_ref::<reqwest::Error>() {
+                    is_retriable = reqwest_err.is_connect() || reqwest_err.is_timeout();
+                }
+                // You could add more checks here for other error sources if needed
+                // e.g., if e_anyhow.downcast_ref::<MyCustomRetriableError>().is_some() { is_retriable = true; }
+                DAError {
+                    error: anyhow!("RPC call to getnevmblobdata failed: {}", e_anyhow), // Keep original anyhow error for context
+                    is_retriable,
+                }
             })?;
 
         if let Some(error_val) = response.get("error") {
@@ -194,9 +213,9 @@ impl DataAvailabilityClient for BitcoinDAClient {
         &self,
         dispatch_request_id: String,
     ) -> Result<Option<types::FinalityResponse>, types::DAError> {
-        // TODO: Implement actual finality check with BitcoinDA/Syscoin
+        // TODO: Implement actual finality check with Bitcoin/Syscoin
         tracing::info!(
-            "Simulating ensure_finality for BitcoinDA: request_id = {}",
+            "Simulating ensure_finality for Bitcoin: request_id = {}",
             dispatch_request_id
         );
         Ok(Some(types::FinalityResponse {
@@ -209,23 +228,23 @@ impl DataAvailabilityClient for BitcoinDAClient {
     }
 
     fn blob_size_limit(&self) -> Option<usize> {
-        Some(BitcoinDAClient::MAX_BLOB_SIZE)
+        Some(BitcoinClient::MAX_BLOB_SIZE)
     }
 
     fn client_type(&self) -> ClientType {
-        ClientType::BitcoinDA
+        ClientType::Bitcoin
     }
 
     async fn balance(&self) -> Result<u64, types::DAError> {
-        // TODO: Implement balance check if applicable for BitcoinDA operator
-        tracing::info!("Simulating balance check for BitcoinDA. Returning 0.");
+        // TODO: Implement balance check if applicable for Bitcoin operator
+        tracing::info!("Simulating balance check for Bitcoin. Returning 0.");
         Ok(0)
     }
 }
 
-impl Debug for BitcoinDAClient {
+impl Debug for BitcoinClient {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("BitcoinDAClient")
+        f.debug_struct("BitcoinClient")
             .field("rpc_url", &self.rpc_url)
             .field("rpc_user", &self.rpc_user)
             .field("rpc_password", &self.rpc_password)

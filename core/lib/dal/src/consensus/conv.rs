@@ -582,6 +582,8 @@ impl proto::PubdataType {
             Self::Avail => PubdataType::Avail,
             Self::Celestia => PubdataType::Celestia,
             Self::Eigen => PubdataType::Eigen,
+            // SYSCOIN
+            Self::Bitcoin => PubdataType::Bitcoin,
             Self::ObjectStore => PubdataType::ObjectStore,
         }
     }

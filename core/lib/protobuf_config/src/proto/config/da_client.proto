@@ -38,6 +38,11 @@ message CelestiaConfig {
   optional uint64 timeout_ms = 4;
 }
 
+// SYSCOIN
+message BitcoinConfig {
+  optional string api_node_url = 1;
+}
+
 message Url {
   optional string g1_url = 1;
   optional string g2_url = 2;
@@ -70,6 +75,6 @@ message DataAvailabilityClient {
     EigenConfig eigen = 4;
     NoDAConfig no_da = 5;
     // SYSCOIN
-    BitcoinDAConfig bitcoin = 6;
+    BitcoinConfig bitcoin = 6;
   }
 }

@@ -30,7 +30,7 @@ pub enum ValidiumTypeInternal {
     Avail,
     EigenDA,
     // SYSCOIN
-    BitcoinDA,
+    Bitcoin,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, EnumIter, Display, ValueEnum)]
@@ -45,7 +45,7 @@ pub enum ValidiumType {
     Avail((AvailConfig, AvailSecrets)),
     EigenDA,
     // SYSCOIN
-    BitcoinDA,
+    Bitcoin,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, EnumIter, Display, ValueEnum)]
@@ -59,7 +59,7 @@ impl ValidiumType {
         match PromptSelect::new(MSG_VALIDIUM_TYPE_PROMPT, ValidiumTypeInternal::iter()).ask() {
             ValidiumTypeInternal::EigenDA => ValidiumType::EigenDA, // EigenDA doesn't support configuration through CLI
             // SYSCOIN
-            ValidiumTypeInternal::BitcoinDA => ValidiumType::BitcoinDA,
+            ValidiumTypeInternal::Bitcoin => ValidiumType::Bitcoin,
             ValidiumTypeInternal::NoDA => ValidiumType::NoDA,
             ValidiumTypeInternal::Avail => {
                 let avail_client_type = PromptSelect::new(
