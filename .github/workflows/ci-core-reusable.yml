@@ -17,7 +17,7 @@ jobs:
     name: lint
     uses: ./.github/workflows/ci-core-lint-reusable.yml
   unit-tests:
-    runs-on: ubuntu-latest
+    runs-on: [ matterlabs-ci-runner-highmem-long ]
 
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
@@ -96,7 +96,7 @@ jobs:
           ci_run cargo test --manifest-path ./core/Cargo.toml --release -p vm-benchmark --bench oneshot --bench batch
 
   loadtest:
-    runs-on: [ ubuntu-latest ]
+    runs-on: [ matterlabs-ci-runner-high-performance ]
     strategy:
       fail-fast: false
       matrix:
@@ -184,7 +184,7 @@ jobs:
           ci_run cat /tmp/sccache_log.txt || true
 
   integration-tests:
-    runs-on: [ ubuntu-latest ]
+    runs-on: [ matterlabs-ci-runner-ultra-performance ]
     strategy:
       # ----------------------------------------------
       # Note, that while the contracts do support gateway chain
