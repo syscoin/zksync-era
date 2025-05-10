@@ -28,7 +28,7 @@ jobs:
       matrix:
         include:
           - arch: x86_64-unknown-linux-gnu
-            platform: matterlabs-ci-runner-highmem-long
+            platform: ubuntu-latest
           - arch: aarch64-unknown-linux-gnu
             platform: matterlabs-ci-runner-arm
           - arch: x86_64-apple-darwin
