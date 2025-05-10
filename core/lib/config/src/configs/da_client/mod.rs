@@ -1,6 +1,7 @@
 use serde::Deserialize;
+
 // SYSCOIN
-use crate::{AvailConfig, CelestiaConfig, EigenConfig, BitcoinConfig, ObjectStoreConfig};
+use crate::{AvailConfig, BitcoinConfig, CelestiaConfig, EigenConfig, ObjectStoreConfig};
 
 pub mod avail;
 pub mod celestia;

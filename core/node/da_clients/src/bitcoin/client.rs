@@ -7,12 +7,10 @@ use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 use hex::{decode, encode};
 use reqwest::Client;
-use serde::Deserialize;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
-use zksync_config::configs::{
-    da_client::bitcoin::BitcoinConfig as BitcoinServerConfig, 
-    da_client::bitcoin::BitcoinSecrets,
+use zksync_config::configs::da_client::bitcoin::{
+    BitcoinConfig as BitcoinServerConfig, BitcoinSecrets,
 };
 use zksync_da_client::{
     types,
@@ -153,22 +151,22 @@ impl DataAvailabilityClient for BitcoinClient {
         };
         let params = json!({ "versionhash_or_txid": actual_blob_id, "getdata": true });
 
-        let response: Value = self
-            .call_rpc("getnevmblobdata", params)
-            .await
-            .map_err(|e_anyhow: anyhow::Error| {
-                let mut is_retriable = false;
-                // Check if the cause was a reqwest error
-                if let Some(reqwest_err) = e_anyhow.downcast_ref::<reqwest::Error>() {
-                    is_retriable = reqwest_err.is_connect() || reqwest_err.is_timeout();
-                }
-                // You could add more checks here for other error sources if needed
-                // e.g., if e_anyhow.downcast_ref::<MyCustomRetriableError>().is_some() { is_retriable = true; }
-                DAError {
-                    error: anyhow!("RPC call to getnevmblobdata failed: {}", e_anyhow), // Keep original anyhow error for context
-                    is_retriable,
-                }
-            })?;
+        let response: Value =
+            self.call_rpc("getnevmblobdata", params)
+                .await
+                .map_err(|e_anyhow: anyhow::Error| {
+                    let mut is_retriable = false;
+                    // Check if the cause was a reqwest error
+                    if let Some(reqwest_err) = e_anyhow.downcast_ref::<reqwest::Error>() {
+                        is_retriable = reqwest_err.is_connect() || reqwest_err.is_timeout();
+                    }
+                    // You could add more checks here for other error sources if needed
+                    // e.g., if e_anyhow.downcast_ref::<MyCustomRetriableError>().is_some() { is_retriable = true; }
+                    DAError {
+                        error: anyhow!("RPC call to getnevmblobdata failed: {}", e_anyhow), // Keep original anyhow error for context
+                        is_retriable,
+                    }
+                })?;
 
         if let Some(error_val) = response.get("error") {
             if !error_val.is_null() {

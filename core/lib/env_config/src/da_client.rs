@@ -95,8 +95,13 @@ pub fn da_client_config_from_env(prefix: &str) -> anyhow::Result<DAClientConfig>
         NO_DA_CLIENT_CONFIG_NAME => DAClientConfig::NoDA,
         // SYSCOIN
         BITCOIN_CLIENT_CONFIG_NAME => {
-            let api_node_url = env::var(format!("{}BITCOIN_API_NODE_URL", prefix))
-                .with_context(|| format!("Missing environment variable {}BITCOIN_API_NODE_URL for Bitcoin client", prefix))?;
+            let api_node_url =
+                env::var(format!("{}BITCOIN_API_NODE_URL", prefix)).with_context(|| {
+                    format!(
+                        "Missing environment variable {}BITCOIN_API_NODE_URL for Bitcoin client",
+                        prefix
+                    )
+                })?;
             DAClientConfig::Bitcoin(BitcoinConfig { api_node_url })
         }
         _ => anyhow::bail!("Unknown DA client name: {}", client_tag),

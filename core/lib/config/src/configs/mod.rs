@@ -7,8 +7,8 @@ pub use self::{
     contracts::chain::AllContractsConfig,
     // SYSCOIN
     da_client::{
-        avail::AvailConfig, bitcoin::BitcoinConfig, celestia::CelestiaConfig,
-        eigen::EigenConfig, DAClientConfig,
+        avail::AvailConfig, bitcoin::BitcoinConfig, celestia::CelestiaConfig, eigen::EigenConfig,
+        DAClientConfig,
     },
     da_dispatcher::DADispatcherConfig,
     database::{DBConfig, PostgresConfig},

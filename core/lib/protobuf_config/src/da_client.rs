@@ -65,11 +65,11 @@ impl ProtoRepr for proto::DataAvailabilityClient {
                 timeout_ms: *required(&conf.timeout_ms).context("timeout_ms")?,
             }),
             // SYSCOIN
-            proto::data_availability_client::Config::Bitcoin(conf) => {
-                Bitcoin(BitcoinConfig {
-                    api_node_url: required(&conf.api_node_url).context("bitcoin_api_node_url")?.clone(),
-                })
-            }
+            proto::data_availability_client::Config::Bitcoin(conf) => Bitcoin(BitcoinConfig {
+                api_node_url: required(&conf.api_node_url)
+                    .context("bitcoin_api_node_url")?
+                    .clone(),
+            }),
             proto::data_availability_client::Config::Eigen(conf) => Eigen(EigenConfig {
                 disperser_rpc: required(&conf.disperser_rpc)
                     .context("disperser_rpc")?
