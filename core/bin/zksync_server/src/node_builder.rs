@@ -645,9 +645,6 @@ impl MainNodeBuilder {
                 self.node
                     .add_layer(CelestiaWiringLayer::new(config, secret));
             }
-            (DAClientConfig::Bitcoin(config), DataAvailabilitySecrets::Bitcoin(secret)) => {
-                self.node.add_layer(BitcoinWiringLayer::new(config, secret));
-            }
             (DAClientConfig::Eigen(mut config), DataAvailabilitySecrets::Eigen(secret)) => {
                 if config.eigenda_eth_rpc.is_none() {
                     let l1_secrets = try_load_config!(self.secrets.l1);
@@ -655,6 +652,10 @@ impl MainNodeBuilder {
                 }
 
                 self.node.add_layer(EigenWiringLayer::new(config, secret));
+            }
+            // SYSCOIN
+            (DAClientConfig::Bitcoin(config), DataAvailabilitySecrets::Bitcoin(secret)) => {
+                self.node.add_layer(BitcoinWiringLayer::new(config, secret));
             }
             _ => bail!("invalid pair of da_client and da_secrets"),
         }

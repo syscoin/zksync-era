@@ -46,7 +46,7 @@ pub struct BitcoinClient {
 impl BitcoinClient {
     const MAX_BLOB_SIZE: usize = 2 * 1024 * 1024;
 
-    pub fn new(config: BitcoinServerConfig, secrets: BitcoinSecrets) -> anyhow::Result<Self> {
+    pub fn new(config: BitcoinServerConfig, _secrets: BitcoinSecrets) -> anyhow::Result<Self> {
         Ok(Self {
             http_client: Arc::new(Client::new()),
             rpc_url: config.api_node_url,
@@ -144,8 +144,8 @@ impl DataAvailabilityClient for BitcoinClient {
         &self,
         blob_id: &str,
     ) -> anyhow::Result<Option<InclusionData>, DAError> {
-        let actual_blob_id = if blob_id.starts_with("0x") {
-            &blob_id[2..]
+        let actual_blob_id = if let Some(stripped) = blob_id.strip_prefix("0x") {
+            stripped
         } else {
             blob_id
         };

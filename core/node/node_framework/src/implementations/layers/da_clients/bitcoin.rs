@@ -27,7 +27,7 @@ impl WiringLayer for BitcoinWiringLayer {
         // Pass the stored config and secrets to the client's new method
         let client_result = BitcoinClient::new(self.config, self.secrets);
         let client: Box<dyn DataAvailabilityClient> =
-            Box::new(client_result.map_err(|e| WiringError::Internal(e.into()))?);
+            Box::new(client_result.map_err(WiringError::Internal)?);
 
         Ok(Self::Output {
             client: DAClientResource(client),

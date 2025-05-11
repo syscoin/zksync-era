@@ -5,11 +5,11 @@ pub use crate::configs::{
     ApiConfig,
     AvailConfig,
     BaseTokenAdjusterConfig,
+    // SYSCOIN
     BitcoinConfig,
     CelestiaConfig,
     ContractVerifierConfig,
     DAClientConfig,
-    // SYSCOIN
     DADispatcherConfig,
     DBConfig,
     EigenConfig,
