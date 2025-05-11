@@ -1,6 +1,6 @@
 //! Test utils shared among multiple modules.
 
-use std::{collections::HashMap, iter};
+use std::collections::HashMap;
 
 use assert_matches::assert_matches;
 use zk_evm_1_5_0::zkevm_opcode_defs::decoding::{EncodingModeProduction, VmEncodingMode};
