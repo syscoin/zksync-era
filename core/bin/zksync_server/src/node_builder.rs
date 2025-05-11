@@ -646,8 +646,7 @@ impl MainNodeBuilder {
                     .add_layer(CelestiaWiringLayer::new(config, secret));
             }
             (DAClientConfig::Bitcoin(config), DataAvailabilitySecrets::Bitcoin(secret)) => {
-                self.node
-                    .add_layer(BitcoinWiringLayer::new(config, secret));
+                self.node.add_layer(BitcoinWiringLayer::new(config, secret));
             }
             (DAClientConfig::Eigen(mut config), DataAvailabilitySecrets::Eigen(secret)) => {
                 if config.eigenda_eth_rpc.is_none() {
