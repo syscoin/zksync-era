@@ -81,9 +81,9 @@ pub enum PubdataType {
     Avail,
     Celestia,
     Eigen,
+    ObjectStore,
     // SYSCOIN
     Bitcoin,
-    ObjectStore,
 }
 
 impl FromStr for PubdataType {

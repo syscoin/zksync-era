@@ -1,23 +1,12 @@
-use zksync_config::{configs::da_client::bitcoin::BitcoinSecrets, BitcoinConfig};
+use zksync_config::configs::da_client::bitcoin::{BitcoinConfig, BitcoinSecrets};
 use zksync_da_client::DataAvailabilityClient;
 use zksync_da_clients::bitcoin::BitcoinClient;
-use zksync_node_framework::{
+
+use crate::{
     implementations::resources::da_client::DAClientResource,
     wiring_layer::{WiringError, WiringLayer},
     IntoContext,
 };
-
-#[derive(Debug)] // No longer Default
-pub struct BitcoinWiringLayer {
-    config: BitcoinServerConfig,
-    secrets: BitcoinSecrets,
-}
-
-impl BitcoinWiringLayer {
-    pub fn new(config: BitcoinServerConfig, secrets: BitcoinSecrets) -> Self {
-        Self { config, secrets }
-    }
-}
 
 #[derive(Debug, IntoContext)]
 #[context(crate = crate)] // Assuming node_framework is the current crate context for IntoContext proc macro
@@ -43,5 +32,16 @@ impl WiringLayer for BitcoinWiringLayer {
         Ok(Self::Output {
             client: DAClientResource(client),
         })
+    }
+}
+
+pub struct BitcoinWiringLayer {
+    config: BitcoinConfig,
+    secrets: BitcoinSecrets,
+}
+
+impl BitcoinWiringLayer {
+    pub fn new(config: BitcoinConfig, secrets: BitcoinSecrets) -> Self {
+        Self { config, secrets }
     }
 }

@@ -630,12 +630,6 @@ impl MainNodeBuilder {
             self.node.add_layer(NoDAClientWiringLayer);
             return Ok(self);
         }
-        // SYSCOIN
-        if matches!(da_client_config, DAClientConfig::Bitcoin) {
-            self.node.add_layer(BitcoinWiringLayer::new(config));
-            return Ok(self);
-        }
-
         if let DAClientConfig::ObjectStore(config) = da_client_config {
             self.node
                 .add_layer(ObjectStorageClientWiringLayer::new(config));
@@ -650,6 +644,10 @@ impl MainNodeBuilder {
             (DAClientConfig::Celestia(config), DataAvailabilitySecrets::Celestia(secret)) => {
                 self.node
                     .add_layer(CelestiaWiringLayer::new(config, secret));
+            }
+            (DAClientConfig::Bitcoin(config), DataAvailabilitySecrets::Bitcoin(secret)) => {
+                self.node
+                    .add_layer(BitcoinWiringLayer::new(config, secret));
             }
             (DAClientConfig::Eigen(mut config), DataAvailabilitySecrets::Eigen(secret)) => {
                 if config.eigenda_eth_rpc.is_none() {
