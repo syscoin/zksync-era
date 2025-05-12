@@ -113,7 +113,9 @@ impl DataAvailabilityClient for BitcoinDAClient {
 
         // Server-side errors are generally retriable (might be transient)
         match self.client.create_blob(&data).await {
-            Ok(blob_id) => Ok(DispatchResponse { request_id: blob_id }),
+            Ok(blob_id) => Ok(DispatchResponse {
+                request_id: blob_id,
+            }),
             Err(e) => Err(to_retriable_da_error(anyhow!("{}", e))),
         }
     }
