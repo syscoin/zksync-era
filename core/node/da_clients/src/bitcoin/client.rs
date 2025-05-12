@@ -6,6 +6,7 @@ use std::{
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 use bitcoin_da_client::{SyscoinClient, MAX_BLOB_SIZE};
+use hex::FromHex;
 use serde::{Deserialize, Serialize};
 use zksync_config::configs::da_client::bitcoin::{
     BitcoinConfig as BitcoinServerConfig, BitcoinSecrets,
@@ -17,7 +18,6 @@ use zksync_da_client::{
 };
 
 use crate::utils::{to_non_retriable_da_error, to_retriable_da_error};
-use hex::FromHex;
 
 #[derive(Clone, Deserialize, Serialize)]
 struct RPCError {
@@ -153,7 +153,10 @@ impl DataAvailabilityClient for BitcoinDAClient {
                 // Blob exists but not yet final
                 Ok(None)
             }
-            Err(e) => Err(to_retriable_da_error(anyhow!("Failed to verify finality: {}", e))),
+            Err(e) => Err(to_retriable_da_error(anyhow!(
+                "Failed to verify finality: {}",
+                e
+            ))),
         }
     }
 
