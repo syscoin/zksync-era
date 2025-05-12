@@ -1,6 +1,7 @@
-use zksync_config::configs::da_client::bitcoin::{BitcoinConfig, BitcoinSecrets};
+use zksync_config::{configs::da_client::bitcoin::BitcoinSecrets, BitcoinConfig};
 use zksync_da_client::DataAvailabilityClient;
-use zksync_da_clients::bitcoin::BitcoinClient;
+use zksync_da_clients::bitcoin::BitcoinDAClient;
+use zksync_node_framework_derive::FromContext;
 
 use crate::{
     implementations::resources::da_client::DAClientResource,
@@ -8,33 +9,7 @@ use crate::{
     IntoContext,
 };
 
-#[derive(Debug, IntoContext)]
-#[context(crate = crate)] // Assuming node_framework is the current crate context for IntoContext proc macro
-pub struct Output {
-    pub client: DAClientResource,
-}
-
-#[async_trait::async_trait]
-impl WiringLayer for BitcoinWiringLayer {
-    type Input = (); // Assuming no specific input is required from other layers for now
-    type Output = Output;
-
-    fn layer_name(&self) -> &'static str {
-        "bitcoin_client_layer"
-    }
-
-    async fn wire(self, _input: Self::Input) -> Result<Self::Output, WiringError> {
-        // Pass the stored config and secrets to the client's new method
-        let client_result = BitcoinClient::new(self.config, self.secrets);
-        let client: Box<dyn DataAvailabilityClient> =
-            Box::new(client_result.map_err(WiringError::Internal)?);
-
-        Ok(Self::Output {
-            client: DAClientResource(client),
-        })
-    }
-}
-
+#[derive(Debug)]
 pub struct BitcoinWiringLayer {
     config: BitcoinConfig,
     secrets: BitcoinSecrets,
@@ -43,5 +18,36 @@ pub struct BitcoinWiringLayer {
 impl BitcoinWiringLayer {
     pub fn new(config: BitcoinConfig, secrets: BitcoinSecrets) -> Self {
         Self { config, secrets }
+    }
+}
+
+#[derive(Debug, FromContext)]
+#[context(crate = crate)]
+pub struct Input {}
+
+#[derive(Debug, IntoContext)]
+#[context(crate = crate)]
+pub struct Output {
+    pub client: DAClientResource,
+}
+
+#[async_trait::async_trait]
+impl WiringLayer for BitcoinWiringLayer {
+    type Input = Input;
+    type Output = Output;
+
+    fn layer_name(&self) -> &'static str {
+        "bitcoin_client_layer"
+    }
+
+    async fn wire(self, _input: Self::Input) -> Result<Self::Output, WiringError> {
+        let client: Box<dyn DataAvailabilityClient> = Box::new(BitcoinDAClient::new(
+            self.config,
+            self.secrets,
+        )?);
+
+        Ok(Self::Output {
+            client: DAClientResource(client),
+        })
     }
 }

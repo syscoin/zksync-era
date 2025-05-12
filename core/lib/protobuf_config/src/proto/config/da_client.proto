@@ -41,6 +41,7 @@ message CelestiaConfig {
 // SYSCOIN
 message BitcoinConfig {
   optional string api_node_url = 1;
+  optional string poda_url = 2;
 }
 
 message Url {

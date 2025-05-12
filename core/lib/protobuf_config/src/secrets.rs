@@ -156,11 +156,12 @@ impl ProtoRepr for proto::DataAvailabilitySecrets {
             }),
             // SYSCOIN
             DaSecrets::Bitcoin(bitcoin) => DataAvailabilitySecrets::Bitcoin(BitcoinSecrets {
-                private_key: PrivateKey::from(
-                    required(&bitcoin.private_key)
-                        .context("bitcoin_private_key")?
-                        .as_str(),
-                ),
+                rpc_user: required(&bitcoin.rpc_user)
+                    .context("bitcoin_rpc_user")?
+                    .to_string(),
+                rpc_password: required(&bitcoin.rpc_password)
+                    .context("bitcoin_rpc_password")?
+                    .to_string(),
             }),
         };
 
@@ -211,7 +212,8 @@ impl ProtoRepr for proto::DataAvailabilitySecrets {
             // SYSCOIN
             DataAvailabilitySecrets::Bitcoin(config) => {
                 Some(DaSecrets::Bitcoin(proto::BitcoinSecret {
-                    private_key: Some(config.private_key.0.expose_secret().to_string()),
+                    rpc_user: Some(config.rpc_user.clone()),
+                    rpc_password: Some(config.rpc_password.clone()),
                 }))
             }
             DataAvailabilitySecrets::Eigen(config) => Some(DaSecrets::Eigen(proto::EigenSecret {

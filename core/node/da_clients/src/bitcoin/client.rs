@@ -5,10 +5,8 @@ use std::{
 
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;
-use hex::{decode, encode};
-use reqwest::Client;
+use bitcoin_da_client::{SyscoinClient, MAX_BLOB_SIZE};
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
 use zksync_config::configs::da_client::bitcoin::{
     BitcoinConfig as BitcoinServerConfig, BitcoinSecrets,
 };
@@ -17,6 +15,8 @@ use zksync_da_client::{
     types::{ClientType, DAError, DispatchResponse, InclusionData},
     DataAvailabilityClient,
 };
+
+use crate::utils::{to_non_retriable_da_error, to_retriable_da_error};
 
 #[derive(Clone, Deserialize, Serialize)]
 struct RPCError {
@@ -35,182 +35,109 @@ struct BlobResult {
     versionhash: String,
 }
 
-#[derive(Clone)]
-pub struct BitcoinClient {
-    http_client: Arc<Client>,
-    rpc_url: String,
+// BitcoinDAClient with Arc-wrapped client for thread-safety
+pub struct BitcoinDAClient {
+    client: Arc<SyscoinClient>,
+    // Store these for potential cloning
+    api_node_url: String,
     rpc_user: String,
     rpc_password: String,
+    poda_url: String,
 }
 
-impl BitcoinClient {
-    const MAX_BLOB_SIZE: usize = 2 * 1024 * 1024;
+impl BitcoinDAClient {
+    pub fn new(config: BitcoinServerConfig, secrets: BitcoinSecrets) -> Result<Self> {
+        let client = SyscoinClient::new(
+            &config.api_node_url,
+            &secrets.rpc_user,
+            &secrets.rpc_password,
+            &config.poda_url,
+            None,
+        ).map_err(|e| anyhow!("Failed to create SyscoinClient: {}", e))?;
 
-    pub fn new(config: BitcoinServerConfig, _secrets: BitcoinSecrets) -> anyhow::Result<Self> {
-        Ok(Self {
-            http_client: Arc::new(Client::new()),
-            rpc_url: config.api_node_url,
-            rpc_user: "u".to_string(),
-            rpc_password: "p".to_string(),
+        Ok(Self { 
+            client: Arc::new(client),
+            api_node_url: config.api_node_url.clone(),
+            rpc_user: secrets.rpc_user.clone(),
+            rpc_password: secrets.rpc_password.clone(),
+            poda_url: config.poda_url.clone(),
         })
     }
+}
 
-    async fn call_rpc<T: for<'a> Deserialize<'a>>(
-        &self,
-        method: &str,
-        params: serde_json::Value,
-    ) -> Result<T> {
-        let body = json!({
-            "method": method,
-            "params": params,
-            "id": "1",
-            "jsonrpc": "2.0"
-        });
+// Manual impl for Debug
+impl Debug for BitcoinDAClient {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("BitcoinDAClient")
+            .field("api_node_url", &self.api_node_url)
+            .field("poda_url", &self.poda_url)
+            .finish_non_exhaustive()
+    }
+}
 
-        let response = self
-            .http_client
-            .post(&self.rpc_url)
-            .basic_auth(&self.rpc_user, Some(&self.rpc_password))
-            .json(&body)
-            .send()
-            .await?;
-
-        // Check for HTTP errors first
-        response.error_for_status_ref()?;
-
-        let parsed: T = response.json().await?;
-        Ok(parsed)
+// Now clone is simple because we're using Arc
+impl Clone for BitcoinDAClient {
+    fn clone(&self) -> Self {
+        Self {
+            client: Arc::clone(&self.client),
+            api_node_url: self.api_node_url.clone(),
+            rpc_user: self.rpc_user.clone(),
+            rpc_password: self.rpc_password.clone(),
+            poda_url: self.poda_url.clone(),
+        }
     }
 }
 
 #[async_trait]
-impl DataAvailabilityClient for BitcoinClient {
+impl DataAvailabilityClient for BitcoinDAClient {
     async fn dispatch_blob(
         &self,
         _batch_number: u32,
         data: Vec<u8>,
     ) -> Result<DispatchResponse, DAError> {
-        if data.len() > BitcoinClient::MAX_BLOB_SIZE {
-            return Err(DAError {
-                error: anyhow!("Blob size exceeds the maximum limit"),
-                is_retriable: false,
-            });
+        // Check for non-retriable errors first (client-side validation)
+        let size_limit = MAX_BLOB_SIZE;
+        if data.len() > size_limit {
+            return Err(to_non_retriable_da_error(anyhow!(
+                "Blob size exceeds the maximum limit of {} bytes", 
+                size_limit
+            )));
         }
 
-        let data_hex = encode(&data);
-        let params = json!({ "data": data_hex });
-
-        // Specific error handling for syscoincreatenevmblob
-        let rpc_response: CreateBlobResponse = self
-            .call_rpc("syscoincreatenevmblob", params)
-            .await
-            .map_err(|e_anyhow: anyhow::Error| {
-                let mut is_retriable = false;
-                // Check if the cause was a reqwest error
-                if let Some(reqwest_err) = e_anyhow.downcast_ref::<reqwest::Error>() {
-                    is_retriable = reqwest_err.is_connect() || reqwest_err.is_timeout();
-                }
-                // You could add more checks here for other error sources if needed
-                // e.g., if e_anyhow.downcast_ref::<MyCustomRetriableError>().is_some() { is_retriable = true; }
-                DAError {
-                    error: anyhow!("RPC call to syscoincreatenevmblob failed: {}", e_anyhow), // Keep original anyhow error for context
-                    is_retriable,
-                }
-            })?;
-
-        if let Some(err_info) = rpc_response.error {
-            return Err(DAError {
-                error: anyhow!(
-                    "RPC error from syscoincreatenevmblob: code {}, message: {}",
-                    err_info.code,
-                    err_info.message
-                ),
-                is_retriable: false,
-            });
-        }
-
-        match rpc_response.result {
-            Some(blob_result) => Ok(DispatchResponse {
-                request_id: blob_result.versionhash,
-            }),
-            None => Err(DAError {
-                error: anyhow!("Missing result in syscoincreatenevmblob response"),
-                is_retriable: false,
-            }),
+        // Server-side errors are generally retriable (might be transient)
+        let result = self
+            .client
+            .create_blob(&data)
+            .await;
+            
+        match result {
+            Ok(blob_id) => Ok(DispatchResponse { request_id: blob_id }),
+            Err(e) => Err(to_retriable_da_error(anyhow!("{}", e))),
         }
     }
 
     async fn get_inclusion_data(
         &self,
         blob_id: &str,
-    ) -> anyhow::Result<Option<InclusionData>, DAError> {
-        let actual_blob_id = if let Some(stripped) = blob_id.strip_prefix("0x") {
-            stripped
-        } else {
-            blob_id
-        };
-        let params = json!({ "versionhash_or_txid": actual_blob_id, "getdata": true });
-
-        let response: Value =
-            self.call_rpc("getnevmblobdata", params)
-                .await
-                .map_err(|e_anyhow: anyhow::Error| {
-                    let mut is_retriable = false;
-                    // Check if the cause was a reqwest error
-                    if let Some(reqwest_err) = e_anyhow.downcast_ref::<reqwest::Error>() {
-                        is_retriable = reqwest_err.is_connect() || reqwest_err.is_timeout();
-                    }
-                    // You could add more checks here for other error sources if needed
-                    // e.g., if e_anyhow.downcast_ref::<MyCustomRetriableError>().is_some() { is_retriable = true; }
-                    DAError {
-                        error: anyhow!("RPC call to getnevmblobdata failed: {}", e_anyhow), // Keep original anyhow error for context
-                        is_retriable,
-                    }
-                })?;
-
-        if let Some(error_val) = response.get("error") {
-            if !error_val.is_null() {
-                // Check if error object is present and not null
-                let code = error_val.get("code").and_then(Value::as_i64).unwrap_or(0);
-                let message = error_val
-                    .get("message")
-                    .and_then(Value::as_str)
-                    .unwrap_or("Unknown RPC error");
-                // Handle specific Syscoin error: "versionhash not found or not a NEVM PoDA blob"
-                if message.contains("Could not find blob information for versionhash") {
-                    return Ok(None); // Treat as blob not found, not an error to retry indefinitely
-                }
-                return Err(DAError {
-                    error: anyhow!(
-                        "RPC error from getnevmblobdata: code {}, message: {}",
-                        code,
-                        message
-                    ),
-                    is_retriable: false,
-                });
-            }
+    ) -> Result<Option<InclusionData>, DAError> {
+        // Invalid blob_id format would be non-retriable
+        if blob_id.trim().is_empty() {
+            return Err(to_non_retriable_da_error(anyhow!(
+                "Invalid blob ID: empty or whitespace"
+            )));
         }
 
-        let data_string = response
-            .get("result")
-            .and_then(|r| r.get("data"))
-            .and_then(Value::as_str);
-        match data_string {
-            Some(s) => {
-                let bytes = decode(s).map_err(|e| DAError {
-                    error: anyhow!("Failed to decode blob data from hex: {}", e),
-                    is_retriable: false,
-                })?;
-                Ok(Some(InclusionData { data: bytes }))
-            }
-            None => Ok(None), // If data is not found or result is missing, treat as blob not found (or not yet available)
+        // Network/server errors are generally retriable
+        match self.client.get_blob(blob_id).await {
+            Ok(data) => Ok(Some(InclusionData { data })),
+            Err(e) => Err(to_retriable_da_error(anyhow!("{}", e))),
         }
     }
 
     async fn ensure_finality(
         &self,
         dispatch_request_id: String,
-    ) -> Result<Option<types::FinalityResponse>, types::DAError> {
+    ) -> Result<Option<types::FinalityResponse>, DAError> {
         // TODO: Implement actual finality check with Bitcoin/Syscoin
         tracing::info!(
             "Simulating ensure_finality for Bitcoin: request_id = {}",
@@ -226,26 +153,17 @@ impl DataAvailabilityClient for BitcoinClient {
     }
 
     fn blob_size_limit(&self) -> Option<usize> {
-        Some(BitcoinClient::MAX_BLOB_SIZE)
+        Some(MAX_BLOB_SIZE)
     }
 
     fn client_type(&self) -> ClientType {
         ClientType::Bitcoin
     }
 
-    async fn balance(&self) -> Result<u64, types::DAError> {
-        // TODO: Implement balance check if applicable for Bitcoin operator
-        tracing::info!("Simulating balance check for Bitcoin. Returning 0.");
-        Ok(0)
-    }
-}
-
-impl Debug for BitcoinClient {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("BitcoinClient")
-            .field("rpc_url", &self.rpc_url)
-            .field("rpc_user", &self.rpc_user)
-            .field("rpc_password", &self.rpc_password)
-            .finish_non_exhaustive()
+    async fn balance(&self) -> Result<u64, DAError> {
+        match self.client.get_balance().await {
+            Ok(balance) => Ok(balance as u64),
+            Err(e) => Err(to_retriable_da_error(anyhow!("{}", e))),
+        }
     }
 }

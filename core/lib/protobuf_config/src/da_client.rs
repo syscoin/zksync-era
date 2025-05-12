@@ -69,6 +69,9 @@ impl ProtoRepr for proto::DataAvailabilityClient {
                 api_node_url: required(&conf.api_node_url)
                     .context("bitcoin_api_node_url")?
                     .clone(),
+                poda_url: required(&conf.poda_url)
+                    .context("bitcoin_poda_url")?
+                    .clone(),
             }),
             proto::data_availability_client::Config::Eigen(conf) => Eigen(EigenConfig {
                 disperser_rpc: required(&conf.disperser_rpc)
@@ -155,6 +158,7 @@ impl ProtoRepr for proto::DataAvailabilityClient {
             Bitcoin(config) => {
                 proto::data_availability_client::Config::Bitcoin(proto::BitcoinConfig {
                     api_node_url: Some(config.api_node_url.clone()),
+                    poda_url: Some(config.poda_url.clone()),
                 })
             }
             Eigen(config) => proto::data_availability_client::Config::Eigen(proto::EigenConfig {

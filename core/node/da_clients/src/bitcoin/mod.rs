@@ -1,3 +1,3 @@
-pub mod client;
+mod client;
 
-pub use client::BitcoinClient;
+pub use self::client::BitcoinDAClient;
