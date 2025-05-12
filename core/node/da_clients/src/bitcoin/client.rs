@@ -98,20 +98,22 @@ impl DataAvailabilityClient for BitcoinDAClient {
     ) -> Result<DispatchResponse, DAError> {
         // Check for non-retriable errors first (client-side validation)
         let size_limit = MAX_BLOB_SIZE;
+        if data.is_empty() {
+            return Err(to_non_retriable_da_error(anyhow!(
+                "Cannot dispatch empty blob"
+            )));
+        }
         if data.len() > size_limit {
             return Err(to_non_retriable_da_error(anyhow!(
-                "Blob size exceeds the maximum limit of {} bytes",
+                "Blob size {} exceeds the maximum limit of {} bytes",
+                data.len(),
                 size_limit
             )));
         }
 
         // Server-side errors are generally retriable (might be transient)
-        let result = self.client.create_blob(&data).await;
-
-        match result {
-            Ok(blob_id) => Ok(DispatchResponse {
-                request_id: blob_id,
-            }),
+        match self.client.create_blob(&data).await {
+            Ok(blob_id) => Ok(DispatchResponse { request_id: blob_id }),
             Err(e) => Err(to_retriable_da_error(anyhow!("{}", e))),
         }
     }
@@ -126,8 +128,20 @@ impl DataAvailabilityClient for BitcoinDAClient {
 
         // Network/server errors are generally retriable
         match self.client.get_blob(blob_id).await {
-            Ok(data) => Ok(Some(InclusionData { data })),
-            Err(e) => Err(to_retriable_da_error(anyhow!("{}", e))),
+            Ok(data) => {
+                if data.is_empty() {
+                    return Err(to_non_retriable_da_error(anyhow!(
+                        "Received empty data for blob ID: {}",
+                        blob_id
+                    )));
+                }
+                Ok(Some(InclusionData { data }))
+            }
+            Err(e) => Err(to_retriable_da_error(anyhow!(
+                "Failed to get inclusion data for blob {}: {}",
+                blob_id,
+                e
+            ))),
         }
     }
 
