@@ -1,0 +1,448 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Gateway launch - ZKsync Era Documentation</title>
+
+
+        <!-- Custom HTML head -->
+        <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="../favicon.svg">
+        <link rel="shortcut icon" href="../favicon.png">
+        <link rel="stylesheet" href="../css/variables.css">
+        <link rel="stylesheet" href="../css/general.css">
+        <link rel="stylesheet" href="../css/chrome.css">
+        <link rel="stylesheet" href="../css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="../fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="highlight-css" href="../highlight.css">
+        <link rel="stylesheet" id="tomorrow-night-css" href="../tomorrow-night.css">
+        <link rel="stylesheet" id="ayu-highlight-css" href="../ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="../css/version-box.css">
+        <link rel="stylesheet" href=".././css/mdbook-admonish.css">
+
+        <!-- MathJax -->
+        <script async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+        <!-- Provide site root to javascript -->
+        <script>
+            var path_to_root = "../";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="../toc.js"></script>
+    </head>
+    <body>
+    <div id="body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            var sidebar = null;
+            var sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+            }
+            sidebar_toggle.checked = sidebar === 'visible';
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="../toc.html"></iframe>
+            </noscript>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">ZKsync Era Documentation</h1>
+
+                    <div class="right-buttons">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        <a href="https://github.com/matter-labs/zksync-era/tree/main/docs" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
+                        </a>
+                        <a href="https://github.com/matter-labs/zksync-era/tree/main/docs/src/guides/gateway-launch.md" title="Suggest an edit" aria-label="Suggest an edit">
+                            <i id="git-edit-button" class="fa fa-edit"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="launching-a-chain-on-zk-gateway-with-bitcoin-da"><a class="header" href="#launching-a-chain-on-zk-gateway-with-bitcoin-da">Launching a chain on ZK Gateway with Bitcoin DA</a></h1>
+<p>This tutorial shows how to deploy Gateway contracts, create the first chain using Bitcoin as the data availability
+layer, and run the node using the new <code>smart_config</code> format.</p>
+<h2 id="prerequisites"><a class="header" href="#prerequisites">Prerequisites</a></h2>
+<ul>
+<li>Run <code>zkstack dev clean all</code></li>
+<li>Install dependencies from <code>docs/src/guides/setup-dev.md</code>.</li>
+<li>Clone the repo and init submodules:
+<pre><code class="language-bash">git clone https://github.com/syscoin/zksync-era.git
+cd zksync-era
+git submodule update --init --recursive
+</code></pre>
+</li>
+<li>Build the <code>zkstack</code> CLI locally:
+<pre><code class="language-bash">curl -L https://raw.githubusercontent.com/matter-labs/zksync-era/main/zkstack_cli/zkstackup/install | bash
+zkstackup --local
+</code></pre>
+</li>
+<li>Make sure you have a Syscoin node + PoDA service available (or an RPC to one).</li>
+<li>Ensure Postgres is running. If you are using <code>zkstack containers</code>, run it before starting the steps below:
+<pre><code class="language-bash">zkstack containers
+</code></pre>
+</li>
+</ul>
+<h3 id="wallet-funding-public-syscoin-networks"><a class="header" href="#wallet-funding-public-syscoin-networks">Wallet funding (public Syscoin networks)</a></h3>
+<p>Before deploying contracts, fund the wallets listed in:</p>
+<ul>
+<li><code>configs/wallets.yaml</code> (ecosystem wallets)</li>
+<li><code>chains/gateway/configs/wallets.yaml</code></li>
+<li><code>chains/zksys/configs/wallets.yaml</code></li>
+</ul>
+<p>At a minimum, the <code>deployer</code> and <code>governor</code> wallets should have enough SYS to cover deployment and migration
+transactions. The CLI recommends ~5 SYS for contract deployment on public networks; plan for at least that in the
+deployer wallet.</p>
+<p>Suggested funding (from the Syscoin deployment README):</p>
+<ul>
+<li>Ecosystem wallets (<code>configs/wallets.yaml</code>):
+<ul>
+<li>deployer: 1 SYS</li>
+<li>governor: 5 SYS</li>
+</ul>
+</li>
+<li>Gateway wallets (<code>chains/gateway/configs/wallets.yaml</code>):
+<ul>
+<li>deployer: 1 SYS</li>
+<li>governor: 0.1 SYS</li>
+</ul>
+</li>
+<li>zkSYS wallets (<code>chains/zksys/configs/wallets.yaml</code>):
+<ul>
+<li>deployer: 0.2 SYS</li>
+<li>governor: 2 SYS</li>
+</ul>
+</li>
+</ul>
+<ol>
+<li>
+<p><strong>Create the Gateway ecosystem (call it ‘gateway’ and use chain-id 57001) in Validium mode with Bitcoin DA</strong></p>
+<pre><code class="language-bash">export ZKSYNC_ERA_PATH=/path/to/zksync-era # Path to zksync-era repo
+export GATEWAY_CHAIN_ID=57001 # Gateway chain id
+export GATEWAY_PROVER_MODE=gpu # Gateway prover mode: no-proofs/gpu
+export GATEWAY_COMMIT_MODE=validium # Gateway commit mode: validium/rollup
+
+zkstack ecosystem create \
+  --ecosystem-name gateway \
+  --link-to-code ${ZKSYNC_ERA_PATH} \
+  --chain-name gateway \
+  --chain-id ${GATEWAY_CHAIN_ID} \
+  --prover-mode ${GATEWAY_PROVER_MODE} \
+  --wallet-creation random \
+  --l1-batch-commit-data-generator-mode ${GATEWAY_COMMIT_MODE} \
+  --validium-type bitcoin \
+  --base-token-address 0x0000000000000000000000000000000000000001 \
+  --base-token-price-nominator 1 \
+  --base-token-price-denominator 1 \
+  --evm-emulator false
+</code></pre>
+</li>
+<li>
+<p><strong>Deploy ecosystem contracts (Syscoin L1: tanenbaum=5700, mainnet=57).</strong></p>
+<pre><code class="language-bash">export L1_RPC_URL=http://localhost:8545 # Syscoin L1 RPC
+cd gateway
+# Update token_weth_address in configs/initial_deployments.yaml before deploying.
+# Tanenbaum: 0xa66b2E50c2b805F31712beA422D0D9e7D0Fd0F35
+# Mainnet:   0xd3e822f3ef011Ca5f17D82C956D952D8d7C3A1BB
+zkstack dev contracts
+FOUNDRY_EVM_VERSION=shanghai FOUNDRY_CHAIN_ID=5700 zkstack ecosystem init \
+  --update-submodules true \
+  --l1-rpc-url ${L1_RPC_URL} \
+  --deploy-ecosystem true \
+  --deploy-erc20 false \
+  --deploy-paymaster false \
+  --ecosystem-only \
+  --no-genesis \
+  --observability false
+</code></pre>
+<p>If prompted about having less than 5 SYS, select “Proceed with the deployment anyway” if your wallet is funded.</p>
+<p><code>FOUNDRY_CHAIN_ID</code> here refers to the Syscoin L1 chain ID, not the Gateway chain ID (which is 57001).</p>
+</li>
+<li>
+<p><strong>Deploy Gateway chain contracts (Validium + Bitcoin DA)</strong></p>
+<pre><code class="language-bash">FOUNDRY_EVM_VERSION=shanghai FOUNDRY_CHAIN_ID=5700 zkstack chain init \
+  --no-genesis \
+  --deploy-paymaster false \
+  --l1-rpc-url ${L1_RPC_URL} \
+  --chain gateway
+
+# This will open an interactive input session to provide Bitcoin DA values:
+# - Validium type: Bitcoin
+# - Bitcoin DA RPC URL
+# - PoDA URL (e.g. https://poda.syscoin.org)
+# - Bitcoin DA RPC user / password
+</code></pre>
+</li>
+<li>
+<p><strong>Convert the chain to a Gateway settlement layer</strong></p>
+<pre><code class="language-bash">FOUNDRY_EVM_VERSION=shanghai FOUNDRY_CHAIN_ID=5700 zkstack chain gateway create-tx-filterer --chain gateway
+FOUNDRY_EVM_VERSION=shanghai FOUNDRY_CHAIN_ID=5700 zkstack chain gateway convert-to-gateway --chain gateway
+
+# Apply gateway override
+zkstack dev config-writer --path ../etc/env/file_based/overrides/gateway.yaml --chain gateway
+
+# Apply network override (for testnet)
+zkstack dev config-writer --path ../etc/env/file_based/overrides/testnet.yaml --chain gateway
+
+# OR For mainnet:
+zkstack dev config-writer --path ../etc/env/file_based/overrides/mainnet.yaml --chain gateway
+</code></pre>
+</li>
+<li>
+<p><strong>Create and register a child Rollup chain (zkSYS) on Gateway</strong></p>
+<pre><code class="language-bash">export ZKSYS_CHAIN_ID=57057 # zkSYS chain id
+export ZKSYS_PROVER_MODE=gpu # zkSYS prover mode: no-proofs/gpu
+export ZKSYS_COMMIT_MODE=rollup # zkSYS commit mode: validium/rollup
+
+# Create the chain
+zkstack chain create \
+    --chain-name zksys \
+    --chain-id ${ZKSYS_CHAIN_ID} \
+    --prover-mode ${ZKSYS_PROVER_MODE} \
+    --wallet-creation random \
+    --l1-batch-commit-data-generator-mode ${ZKSYS_COMMIT_MODE} \
+    --base-token-address 0x0000000000000000000000000000000000000001 \
+    --base-token-price-nominator 1 \
+    --base-token-price-denominator 1 \
+    --override l3_to_gateway
+
+# Initialize it against L1. Use L1 RPC when it asks for RPC here as well.
+# This creates a chain without creating priority txs immediately.
+FOUNDRY_EVM_VERSION=shanghai FOUNDRY_CHAIN_ID=5700 zkstack chain init \
+  --chain zksys \
+  --no-genesis \
+  --deploy-paymaster false \
+  --skip-priority-txs \
+  --l1-rpc-url ${L1_RPC_URL}
+
+# If your Gateway RPC is not local, update it before migration:
+# (the migration command reads api.web3_json_rpc.http_url from the Gateway general config)
+vi chains/gateway/configs/general.yaml
+
+# Update the below config
+api:
+  web3_json_rpc:
+    http_url: &lt;GATEWAY_PUBLIC_RPC_URL&gt;
+
+# Migrate the chain to gateway. Make sure the Gateway chain is running and publicly available.
+# At this stage PQ is indeed empty before starting the migration process
+# Skips the `set_da_validator_pair_via_gateway` call if the priority txs were skipped. Note that this step is not skipped when a chain migrates back to gateway, as the contract must have already been deployed.
+FOUNDRY_EVM_VERSION=shanghai FOUNDRY_CHAIN_ID=5700 zkstack chain gateway migrate-to-gateway --chain zksys --gateway-chain-name gateway -v
+
+# Finalize the migration of the chain on gateway that sends the skipped priority txs and later calls `set_da_validator_pair_via_gateway`.
+FOUNDRY_EVM_VERSION=shanghai FOUNDRY_CHAIN_ID=5700 zkstack chain gateway finalize-chain-migration-to-gateway --chain zksys --gateway-chain-name gateway
+
+# Apply l3_to_gateway override (recommended for L3 chains settling on gateway)
+zkstack dev config-writer --path ../etc/env/file_based/overrides/l3_to_gateway.yaml --chain zksys
+</code></pre>
+<p>The commands deploy contracts, register the chain in BridgeHub and link it to Gateway.</p>
+<p>Note: zkSYS (child rollup) does not use the Bitcoin DA client; keep it in rollup mode.</p>
+</li>
+<li>
+<p><strong>Adjust the Gateway chain configuration</strong></p>
+<p>Add the DA client configuration for Syscoin PoDA (Gateway only):</p>
+<pre><code class="language-yaml">da_client:
+  client: Bitcoin
+  api_node_url: http://localhost:8370 # Syscoin NEVM RPC/API node
+  poda_url: https://poda.syscoin.org # PoDA endpoint (or your own)
+</code></pre>
+<p>Then set the required secrets (credentials and Gateway RPC URL) in <code>chains/gateway/configs/secrets.yaml</code>:</p>
+<pre><code class="language-yaml">l1:
+  gateway_rpc_url: http://127.0.0.1:3050/ # Gateway chain RPC (your Gateway node)
+
+da_client:
+  rpc_user: YOUR_SYSCOIN_RPC_USER
+  rpc_password: YOUR_SYSCOIN_RPC_PASSWORD
+</code></pre>
+<p>Or, as environment variables (alternative to editing secrets):</p>
+<pre><code class="language-bash"># Gateway server (settlement layer)
+export L1_GATEWAY_WEB3_URL="http://127.0.0.1:3050/"
+
+# External node for Gateway
+export EN_GATEWAY_URL="http://127.0.0.1:3050/"
+</code></pre>
+<p>Also set <code>state_keeper.max_pubdata_per_batch</code> for Bitcoin DA (Gateway only):</p>
+<pre><code class="language-yaml">state_keeper:
+  max_pubdata_per_batch: 750000
+</code></pre>
+<p>For more details, see the <a href="./bitcoin-da-client.html#smart_config-example">Bitcoin DA smart_config</a>.</p>
+</li>
+<li>
+<p><strong>Run the nodes</strong></p>
+<pre><code class="language-bash"># Gateway node (Validium + Bitcoin DA)
+zkstack server --chain gateway &amp;
+zkstack server wait --verbose --chain gateway
+
+# zkSYS rollup node
+zkstack server --chain zksys &amp;
+zkstack server wait --verbose --chain zksys
+</code></pre>
+</li>
+</ol>
+<p>This launches the first zkSYS chain on Gateway with BitcoinDA</p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../guides/bitcoin-da-client.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+
+                            <a rel="next prefetch" href="../guides/advanced/index.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../guides/bitcoin-da-client.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+
+                    <a rel="next prefetch" href="../guides/advanced/index.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+
+
+        <script>
+            window.playground_line_numbers = true;
+        </script>
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+        <script src="../ace.js"></script>
+        <script src="../editor.js"></script>
+        <script src="../mode-rust.js"></script>
+        <script src="../theme-dawn.js"></script>
+        <script src="../theme-tomorrow_night.js"></script>
+
+        <script src="../elasticlunr.min.js"></script>
+        <script src="../mark.min.js"></script>
+        <script src="../searcher.js"></script>
+
+        <script src="../clipboard.min.js"></script>
+        <script src="../highlight.js"></script>
+        <script src="../book.js"></script>
+
+        <!-- Custom JS scripts -->
+        <script src="../js/version-box.js"></script>
+        <script src="../js/mermaid-init.js"></script>
+
+
+    </div>
+    </body>
+</html>
