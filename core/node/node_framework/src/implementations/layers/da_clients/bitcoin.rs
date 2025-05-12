@@ -41,10 +41,8 @@ impl WiringLayer for BitcoinWiringLayer {
     }
 
     async fn wire(self, _input: Self::Input) -> Result<Self::Output, WiringError> {
-        let client: Box<dyn DataAvailabilityClient> = Box::new(BitcoinDAClient::new(
-            self.config,
-            self.secrets,
-        )?);
+        let client: Box<dyn DataAvailabilityClient> =
+            Box::new(BitcoinDAClient::new(self.config, self.secrets)?);
 
         Ok(Self::Output {
             client: DAClientResource(client),

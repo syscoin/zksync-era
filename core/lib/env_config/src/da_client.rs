@@ -102,14 +102,16 @@ pub fn da_client_config_from_env(prefix: &str) -> anyhow::Result<DAClientConfig>
                         prefix
                     )
                 })?;
-            let poda_url =
-                env::var(format!("{}BITCOIN_PODA_URL", prefix)).with_context(|| {
-                    format!(
-                        "Missing environment variable {}BITCOIN_PODA_URL for Bitcoin client",
-                        prefix
-                    )
-                })?;
-            DAClientConfig::Bitcoin(BitcoinConfig { api_node_url, poda_url })
+            let poda_url = env::var(format!("{}BITCOIN_PODA_URL", prefix)).with_context(|| {
+                format!(
+                    "Missing environment variable {}BITCOIN_PODA_URL for Bitcoin client",
+                    prefix
+                )
+            })?;
+            DAClientConfig::Bitcoin(BitcoinConfig {
+                api_node_url,
+                poda_url,
+            })
         }
         _ => anyhow::bail!("Unknown DA client name: {}", client_tag),
     };
@@ -160,9 +162,9 @@ pub fn da_client_secrets_from_env(prefix: &str) -> anyhow::Result<DataAvailabili
                 .context("Bitcoin RPC user not found")?;
             let rpc_password = env::var(format!("{}SECRETS_RPC_PASSWORD", prefix))
                 .context("Bitcoin RPC password not found")?;
-            DataAvailabilitySecrets::Bitcoin(BitcoinSecrets { 
+            DataAvailabilitySecrets::Bitcoin(BitcoinSecrets {
                 rpc_user,
-                rpc_password 
+                rpc_password,
             })
         }
         _ => anyhow::bail!("Unknown DA client name: {}", client_tag),
@@ -404,8 +406,7 @@ mod tests {
 
         lock.set_env(config);
 
-        let DataAvailabilitySecrets::Bitcoin(actual) =
-            DataAvailabilitySecrets::from_env().unwrap()
+        let DataAvailabilitySecrets::Bitcoin(actual) = DataAvailabilitySecrets::from_env().unwrap()
         else {
             panic!("expected Bitcoin config")
         };

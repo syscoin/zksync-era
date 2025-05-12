@@ -53,9 +53,10 @@ impl BitcoinDAClient {
             &secrets.rpc_password,
             &config.poda_url,
             None,
-        ).map_err(|e| anyhow!("Failed to create SyscoinClient: {}", e))?;
+        )
+        .map_err(|e| anyhow!("Failed to create SyscoinClient: {}", e))?;
 
-        Ok(Self { 
+        Ok(Self {
             client: Arc::new(client),
             api_node_url: config.api_node_url.clone(),
             rpc_user: secrets.rpc_user.clone(),
@@ -99,27 +100,23 @@ impl DataAvailabilityClient for BitcoinDAClient {
         let size_limit = MAX_BLOB_SIZE;
         if data.len() > size_limit {
             return Err(to_non_retriable_da_error(anyhow!(
-                "Blob size exceeds the maximum limit of {} bytes", 
+                "Blob size exceeds the maximum limit of {} bytes",
                 size_limit
             )));
         }
 
         // Server-side errors are generally retriable (might be transient)
-        let result = self
-            .client
-            .create_blob(&data)
-            .await;
-            
+        let result = self.client.create_blob(&data).await;
+
         match result {
-            Ok(blob_id) => Ok(DispatchResponse { request_id: blob_id }),
+            Ok(blob_id) => Ok(DispatchResponse {
+                request_id: blob_id,
+            }),
             Err(e) => Err(to_retriable_da_error(anyhow!("{}", e))),
         }
     }
 
-    async fn get_inclusion_data(
-        &self,
-        blob_id: &str,
-    ) -> Result<Option<InclusionData>, DAError> {
+    async fn get_inclusion_data(&self, blob_id: &str) -> Result<Option<InclusionData>, DAError> {
         // Invalid blob_id format would be non-retriable
         if blob_id.trim().is_empty() {
             return Err(to_non_retriable_da_error(anyhow!(

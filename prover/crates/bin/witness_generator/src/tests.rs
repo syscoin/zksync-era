@@ -1,4 +1,3 @@
-
 use const_decoder::Decoder::Hex;
 use zkevm_test_harness::{
     kzg::KzgSettings,
