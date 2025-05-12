@@ -17,6 +17,7 @@ use zksync_da_client::{
 };
 
 use crate::utils::{to_non_retriable_da_error, to_retriable_da_error};
+use hex::FromHex;
 
 #[derive(Clone, Deserialize, Serialize)]
 struct RPCError {
@@ -122,48 +123,37 @@ impl DataAvailabilityClient for BitcoinDAClient {
 
     async fn get_inclusion_data(&self, blob_id: &str) -> Result<Option<InclusionData>, DAError> {
         // Invalid blob_id format would be non-retriable
-        if blob_id.trim().is_empty() {
+        let blob_id_clean = blob_id.strip_prefix("0x").unwrap_or(blob_id);
+        if blob_id_clean.len() != 64 || !blob_id_clean.chars().all(|c| c.is_ascii_hexdigit()) {
             return Err(to_non_retriable_da_error(anyhow!(
-                "Invalid blob ID: empty or whitespace"
+                "Invalid blob ID format: expected 32-byte hex string"
             )));
         }
 
-        // Network/server errors are generally retriable
-        match self.client.get_blob(blob_id).await {
-            Ok(data) => {
-                if data.is_empty() {
-                    return Err(to_non_retriable_da_error(anyhow!(
-                        "Received empty data for blob ID: {}",
-                        blob_id
-                    )));
-                }
-                Ok(Some(InclusionData { data }))
-            }
-            Err(e) => Err(to_retriable_da_error(anyhow!(
-                "Failed to get inclusion data for blob {}: {}",
-                blob_id,
-                e
-            ))),
-        }
+        // We don't need the raw blob here; the L1 validator expects the 32-byte hash itself.
+        let bytes: Vec<u8> = Vec::from_hex(blob_id_clean).map_err(|e| {
+            to_non_retriable_da_error(anyhow!("Failed to decode blob ID hex: {}", e))
+        })?;
+
+        Ok(Some(InclusionData { data: bytes }))
     }
 
     async fn ensure_finality(
         &self,
         dispatch_request_id: String,
     ) -> Result<Option<types::FinalityResponse>, DAError> {
-        // Check if the blob exists and is confirmed
-        match self.client.get_blob(&dispatch_request_id).await {
-            Ok(_) => {
-                // If we can get the blob, it's considered finalized
-                // TODO: In the future, we might want to check for a specific number of confirmations
+        match self.client.check_blob_finality(&dispatch_request_id).await {
+            Ok(true) => {
+                // Blob exists and is final
                 Ok(Some(types::FinalityResponse {
                     blob_id: dispatch_request_id,
                 }))
             }
-            Err(e) => Err(to_retriable_da_error(anyhow!(
-                "Failed to verify finality: {}",
-                e
-            ))),
+            Ok(false) => {
+                // Blob exists but not yet final
+                Ok(None)
+            }
+            Err(e) => Err(to_retriable_da_error(anyhow!("Failed to verify finality: {}", e))),
         }
     }
 
