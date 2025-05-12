@@ -135,14 +135,20 @@ impl DataAvailabilityClient for BitcoinDAClient {
         &self,
         dispatch_request_id: String,
     ) -> Result<Option<types::FinalityResponse>, DAError> {
-        // TODO: Implement actual finality check with Bitcoin/Syscoin
-        tracing::info!(
-            "Simulating ensure_finality for Bitcoin: request_id = {}",
-            dispatch_request_id
-        );
-        Ok(Some(types::FinalityResponse {
-            blob_id: dispatch_request_id,
-        }))
+        // Check if the blob exists and is confirmed
+        match self.client.get_blob(&dispatch_request_id).await {
+            Ok(_) => {
+                // If we can get the blob, it's considered finalized
+                // TODO: In the future, we might want to check for a specific number of confirmations
+                Ok(Some(types::FinalityResponse {
+                    blob_id: dispatch_request_id,
+                }))
+            }
+            Err(e) => Err(to_retriable_da_error(anyhow!(
+                "Failed to verify finality: {}",
+                e
+            ))),
+        }
     }
 
     fn clone_boxed(&self) -> Box<dyn DataAvailabilityClient> {
