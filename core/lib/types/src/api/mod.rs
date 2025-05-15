@@ -73,7 +73,7 @@ impl<'de> Deserialize<'de> for BlockNumber {
         D: Deserializer<'de>,
     {
         struct V;
-        impl<'de> serde::de::Visitor<'de> for V {
+        impl serde::de::Visitor<'_> for V {
             type Value = BlockNumber;
             fn expecting(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
                 f.write_str("A block number or one of the supported aliases")

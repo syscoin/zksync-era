@@ -583,6 +583,8 @@ impl proto::PubdataType {
             Self::Celestia => PubdataType::Celestia,
             Self::Eigen => PubdataType::Eigen,
             Self::ObjectStore => PubdataType::ObjectStore,
+            // SYSCOIN
+            Self::Bitcoin => PubdataType::Bitcoin,
         }
     }
 }

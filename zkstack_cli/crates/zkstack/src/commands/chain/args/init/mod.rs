@@ -99,6 +99,8 @@ impl InitArgs {
                     "Avail is not supported via CLI args, use interactive mode" // TODO: Add support for configuration via CLI args
                 ),
                 Some(da_configs::ValidiumTypeInternal::EigenDA) => Some(ValidiumType::EigenDA),
+                // SYSCOIN
+                Some(da_configs::ValidiumTypeInternal::Bitcoin) => Some(ValidiumType::Bitcoin),
             },
             _ => None,
         };

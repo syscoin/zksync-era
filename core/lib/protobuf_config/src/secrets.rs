@@ -8,9 +8,15 @@ use zksync_basic_types::{
 };
 use zksync_config::configs::{
     consensus::{ConsensusSecrets, NodeSecretKey, ValidatorSecretKey},
-    da_client::{avail::AvailSecrets, celestia::CelestiaSecrets, eigen::EigenSecrets},
+    // SYSCOIN
+    da_client::{
+        avail::AvailSecrets, bitcoin::BitcoinSecrets, celestia::CelestiaSecrets,
+        eigen::EigenSecrets,
+    },
     secrets::{DataAvailabilitySecrets, Secrets},
-    ContractVerifierSecrets, DatabaseSecrets, L1Secrets,
+    ContractVerifierSecrets,
+    DatabaseSecrets,
+    L1Secrets,
 };
 use zksync_protobuf::{required, ProtoRepr};
 
@@ -148,6 +154,15 @@ impl ProtoRepr for proto::DataAvailabilitySecrets {
                         .as_str(),
                 ),
             }),
+            // SYSCOIN
+            DaSecrets::Bitcoin(bitcoin) => DataAvailabilitySecrets::Bitcoin(BitcoinSecrets {
+                rpc_user: required(&bitcoin.rpc_user)
+                    .context("bitcoin_rpc_user")?
+                    .to_string(),
+                rpc_password: required(&bitcoin.rpc_password)
+                    .context("bitcoin_rpc_password")?
+                    .to_string(),
+            }),
         };
 
         Ok(client)
@@ -192,6 +207,13 @@ impl ProtoRepr for proto::DataAvailabilitySecrets {
             DataAvailabilitySecrets::Celestia(config) => {
                 Some(DaSecrets::Celestia(proto::CelestiaSecret {
                     private_key: Some(config.private_key.0.expose_secret().to_string()),
+                }))
+            }
+            // SYSCOIN
+            DataAvailabilitySecrets::Bitcoin(config) => {
+                Some(DaSecrets::Bitcoin(proto::BitcoinSecret {
+                    rpc_user: Some(config.rpc_user.clone()),
+                    rpc_password: Some(config.rpc_password.clone()),
                 }))
             }
             DataAvailabilitySecrets::Eigen(config) => Some(DaSecrets::Eigen(proto::EigenSecret {

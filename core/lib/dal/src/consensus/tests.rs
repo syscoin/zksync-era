@@ -63,7 +63,9 @@ fn payload(rng: &mut impl Rng, protocol_version: ProtocolVersionId) -> Payload {
                     2 => PubdataType::Avail,
                     3 => PubdataType::Celestia,
                     4 => PubdataType::Eigen,
-                    _ => PubdataType::ObjectStore,
+                    5 => PubdataType::ObjectStore,
+                    // SYSCOIN
+                    _ => PubdataType::Bitcoin,
                 },
                 l2_da_validator_address: rng.gen(),
             }

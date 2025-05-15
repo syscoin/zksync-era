@@ -44,7 +44,7 @@ impl Workspace<'static> {
     }
 }
 
-impl<'a> Workspace<'a> {
+impl Workspace<'_> {
     const CORE_DIRECTORY_NAME: &'static str = "core";
     const PROVER_DIRECTORY_NAME: &'static str = "prover";
     const ZKSTACK_CLI_DIRECTORY_NAME: &'static str = "zkstack_cli";

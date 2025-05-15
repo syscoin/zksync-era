@@ -107,7 +107,7 @@ impl<'de> Deserialize<'de> for MaxResponseSizeOverrides {
     {
         struct ParseVisitor;
 
-        impl<'v> de::Visitor<'v> for ParseVisitor {
+        impl de::Visitor<'_> for ParseVisitor {
             type Value = MaxResponseSizeOverrides;
 
             fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {

@@ -134,7 +134,7 @@ _arguments "${_arguments_options[@]}" : \
 '-o+[Enable Grafana]' \
 '--observability=[Enable Grafana]' \
 '--update-submodules=[]:UPDATE_SUBMODULES:(true false)' \
-'--validium-type=[Type of the Validium network]:VALIDIUM_TYPE:(no-da avail eigen-da)' \
+'--validium-type=[Type of the Validium network]:VALIDIUM_TYPE:(no-da avail eigen-da bitcoin)' \
 '--support-l2-legacy-shared-bridge-test=[]' \
 '--server-command=[Command to run the server binary]:SERVER_COMMAND:_default' \
 '--chain=[Chain to use]:CHAIN:_default' \
@@ -296,7 +296,7 @@ _arguments "${_arguments_options[@]}" : \
 '--deploy-paymaster=[]' \
 '--l1-rpc-url=[L1 RPC URL]:L1_RPC_URL:_default' \
 '--update-submodules=[]:UPDATE_SUBMODULES:(true false)' \
-'--validium-type=[Type of the Validium network]:VALIDIUM_TYPE:(no-da avail eigen-da)' \
+'--validium-type=[Type of the Validium network]:VALIDIUM_TYPE:(no-da avail eigen-da bitcoin)' \
 '--server-command=[Command to run the server binary]:SERVER_COMMAND:_default' \
 '--chain=[Chain to use]:CHAIN:_default' \
 '--resume[]' \

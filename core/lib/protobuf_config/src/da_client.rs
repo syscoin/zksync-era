@@ -5,9 +5,11 @@ use zksync_config::configs::{
     self,
     da_client::{
         avail::{AvailClientConfig, AvailConfig, AvailDefaultConfig, AvailGasRelayConfig},
+        // SYSCOIN
+        bitcoin::BitcoinConfig,
         celestia::CelestiaConfig,
         eigen::EigenConfig,
-        DAClientConfig::{Avail, Celestia, Eigen, NoDA, ObjectStore},
+        DAClientConfig::{Avail, Bitcoin, Celestia, Eigen, NoDA, ObjectStore},
     },
 };
 use zksync_protobuf::{required, ProtoRepr};
@@ -61,6 +63,15 @@ impl ProtoRepr for proto::DataAvailabilityClient {
                 namespace: required(&conf.namespace).context("namespace")?.clone(),
                 chain_id: required(&conf.chain_id).context("chain_id")?.clone(),
                 timeout_ms: *required(&conf.timeout_ms).context("timeout_ms")?,
+            }),
+            // SYSCOIN
+            proto::data_availability_client::Config::Bitcoin(conf) => Bitcoin(BitcoinConfig {
+                api_node_url: required(&conf.api_node_url)
+                    .context("bitcoin_api_node_url")?
+                    .clone(),
+                poda_url: required(&conf.poda_url)
+                    .context("bitcoin_poda_url")?
+                    .clone(),
             }),
             proto::data_availability_client::Config::Eigen(conf) => Eigen(EigenConfig {
                 disperser_rpc: required(&conf.disperser_rpc)
@@ -141,6 +152,13 @@ impl ProtoRepr for proto::DataAvailabilityClient {
                     namespace: Some(config.namespace.clone()),
                     chain_id: Some(config.chain_id.clone()),
                     timeout_ms: Some(config.timeout_ms),
+                })
+            }
+            // SYSCOIN
+            Bitcoin(config) => {
+                proto::data_availability_client::Config::Bitcoin(proto::BitcoinConfig {
+                    api_node_url: Some(config.api_node_url.clone()),
+                    poda_url: Some(config.poda_url.clone()),
                 })
             }
             Eigen(config) => proto::data_availability_client::Config::Eigen(proto::EigenConfig {

@@ -9,13 +9,23 @@ use zksync_config::{
                 AvailClientConfig, AvailSecrets, AVAIL_FULL_CLIENT_NAME,
                 AVAIL_GAS_RELAY_CLIENT_NAME,
             },
+            // SYSCOIN
+            bitcoin::BitcoinSecrets,
             celestia::CelestiaSecrets,
             eigen::EigenSecrets,
-            DAClientConfig, AVAIL_CLIENT_CONFIG_NAME, CELESTIA_CLIENT_CONFIG_NAME,
-            EIGEN_CLIENT_CONFIG_NAME, NO_DA_CLIENT_CONFIG_NAME, OBJECT_STORE_CLIENT_CONFIG_NAME,
+            DAClientConfig,
+            AVAIL_CLIENT_CONFIG_NAME,
+            // SYSCOIN
+            BITCOIN_CLIENT_CONFIG_NAME,
+            CELESTIA_CLIENT_CONFIG_NAME,
+            EIGEN_CLIENT_CONFIG_NAME,
+            NO_DA_CLIENT_CONFIG_NAME,
+            OBJECT_STORE_CLIENT_CONFIG_NAME,
         },
         secrets::DataAvailabilitySecrets,
         AvailConfig,
+        // SYSCOIN
+        BitcoinConfig,
     },
     EigenConfig,
 };
@@ -83,6 +93,26 @@ pub fn da_client_config_from_env(prefix: &str) -> anyhow::Result<DAClientConfig>
             DAClientConfig::ObjectStore(envy_load("da_object_store", prefix)?)
         }
         NO_DA_CLIENT_CONFIG_NAME => DAClientConfig::NoDA,
+        // SYSCOIN
+        BITCOIN_CLIENT_CONFIG_NAME => {
+            let api_node_url =
+                env::var(format!("{}BITCOIN_API_NODE_URL", prefix)).with_context(|| {
+                    format!(
+                        "Missing environment variable {}BITCOIN_API_NODE_URL for Bitcoin client",
+                        prefix
+                    )
+                })?;
+            let poda_url = env::var(format!("{}BITCOIN_PODA_URL", prefix)).with_context(|| {
+                format!(
+                    "Missing environment variable {}BITCOIN_PODA_URL for Bitcoin client",
+                    prefix
+                )
+            })?;
+            DAClientConfig::Bitcoin(BitcoinConfig {
+                api_node_url,
+                poda_url,
+            })
+        }
         _ => anyhow::bail!("Unknown DA client name: {}", client_tag),
     };
 
@@ -127,7 +157,16 @@ pub fn da_client_secrets_from_env(prefix: &str) -> anyhow::Result<DataAvailabili
                 .into();
             DataAvailabilitySecrets::Eigen(EigenSecrets { private_key })
         }
-
+        BITCOIN_CLIENT_CONFIG_NAME => {
+            let rpc_user = env::var(format!("{}SECRETS_RPC_USER", prefix))
+                .context("Bitcoin RPC user not found")?;
+            let rpc_password = env::var(format!("{}SECRETS_RPC_PASSWORD", prefix))
+                .context("Bitcoin RPC password not found")?;
+            DataAvailabilitySecrets::Bitcoin(BitcoinSecrets {
+                rpc_user,
+                rpc_password,
+            })
+        }
         _ => anyhow::bail!("Unknown DA client name: {}", client_tag),
     };
 
@@ -353,5 +392,25 @@ mod tests {
             actual.private_key,
             "f55baf7c0e4e33b1d78fbf52f069c426bc36cff1aceb9bc8f45d14c07f034d73".into()
         );
+    }
+
+    // SYSCOIN
+    #[test]
+    fn from_env_bitcoin_secrets() {
+        let mut lock = MUTEX.lock();
+        let config = r#"
+            DA_CLIENT="Bitcoin"
+            DA_SECRETS_RPC_USER="syscoin_user"
+            DA_SECRETS_RPC_PASSWORD="syscoin_password"
+        "#;
+
+        lock.set_env(config);
+
+        let DataAvailabilitySecrets::Bitcoin(actual) = DataAvailabilitySecrets::from_env().unwrap()
+        else {
+            panic!("expected Bitcoin config")
+        };
+        assert_eq!(actual.rpc_user, "syscoin_user");
+        assert_eq!(actual.rpc_password, "syscoin_password");
     }
 }

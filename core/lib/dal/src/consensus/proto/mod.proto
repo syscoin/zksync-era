@@ -159,4 +159,6 @@ enum PubdataType {
   Celestia = 3;
   Eigen = 4;
   ObjectStore = 5;
+  // SYSCOIN: Variant for Bitcoin Data Availability
+  Bitcoin = 6;
 }
