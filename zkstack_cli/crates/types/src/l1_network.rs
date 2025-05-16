@@ -49,13 +49,4 @@ impl L1Network {
             L1Network::Mainnet => None, // TODO: add mainnet address after it is known
         }
     }
-    // SYSCOIN
-    pub fn bitcoin_l1_da_validator_addr(&self) -> Option<Address> {
-        match *self {
-            L1Network::Localhost => None,
-            L1Network::Sepolia => None,
-            L1Network::Holesky => None,
-            L1Network::Mainnet => None, // TODO: add mainnet address after it is known
-        }
-    }
 }

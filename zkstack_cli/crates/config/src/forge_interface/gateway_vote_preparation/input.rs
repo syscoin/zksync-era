@@ -33,8 +33,6 @@ pub struct GatewayContractsConfig {
     pub bootloader_hash: H256,
     pub evm_emulator_hash: H256,
     pub avail_l1_da_validator: Option<Address>,
-    // SYSCOIN
-    pub bitcoin_l1_da_validator: Option<Address>,
     pub bridgehub_proxy_address: Address,
 }
 
@@ -115,8 +113,6 @@ impl GatewayVotePreparationConfig {
             bootloader_hash: genesis_input.bootloader_hash,
             evm_emulator_hash: genesis_input.evm_emulator_hash.unwrap_or_default(),
             avail_l1_da_validator: external_contracts_config.l1.avail_l1_da_validator_addr,
-            // SYSCOIN
-            bitcoin_l1_da_validator: external_contracts_config.l1.bitcoin_l1_da_validator_addr,
             bridgehub_proxy_address: external_contracts_config
                 .ecosystem_contracts
                 .bridgehub_proxy_addr,
