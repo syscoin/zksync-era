@@ -26,7 +26,12 @@ use zksync_config::{
 use zksync_contract_verification_server::node::ContractVerificationApiLayer;
 use zksync_core_leftovers::Component;
 use zksync_da_clients::node::{
-    AvailWiringLayer, CelestiaWiringLayer, EigenWiringLayer, NoDAClientWiringLayer,
+    // SYSCOIN
+    AvailWiringLayer,
+    BitcoinWiringLayer,
+    CelestiaWiringLayer,
+    EigenWiringLayer,
+    NoDAClientWiringLayer,
     ObjectStorageClientWiringLayer,
 };
 use zksync_da_dispatcher::node::DataAvailabilityDispatcherLayer;

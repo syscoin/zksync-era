@@ -15,7 +15,12 @@ use zksync_config::{
 };
 use zksync_consistency_checker::node::ConsistencyCheckerLayer;
 use zksync_da_clients::node::{
-    AvailWiringLayer, CelestiaWiringLayer, EigenWiringLayer, NoDAClientWiringLayer,
+    // SYSCOIN
+    AvailWiringLayer,
+    BitcoinWiringLayer,
+    CelestiaWiringLayer,
+    EigenWiringLayer,
+    NoDAClientWiringLayer,
     ObjectStorageClientWiringLayer,
 };
 use zksync_dal::node::{PoolsLayerBuilder, PostgresMetricsLayer};

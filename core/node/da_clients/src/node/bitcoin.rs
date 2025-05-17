@@ -1,13 +1,11 @@
 use zksync_config::{configs::da_client::bitcoin::BitcoinSecrets, BitcoinConfig};
-use zksync_da_client::DataAvailabilityClient;
-use zksync_da_clients::bitcoin::BitcoinDAClient;
-use zksync_node_framework_derive::FromContext;
-
-use crate::{
-    implementations::resources::da_client::DAClientResource,
+use zksync_da_client::{node::DAClientResource, DataAvailabilityClient};
+use zksync_node_framework::{
     wiring_layer::{WiringError, WiringLayer},
-    IntoContext,
+    FromContext, IntoContext,
 };
+
+use crate::bitcoin::BitcoinDAClient;
 
 #[derive(Debug)]
 pub struct BitcoinWiringLayer {
@@ -22,11 +20,9 @@ impl BitcoinWiringLayer {
 }
 
 #[derive(Debug, FromContext)]
-#[context(crate = crate)]
 pub struct Input {}
 
 #[derive(Debug, IntoContext)]
-#[context(crate = crate)]
 pub struct Output {
     pub client: DAClientResource,
 }

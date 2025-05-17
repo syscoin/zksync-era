@@ -1,7 +1,11 @@
 pub use self::{
     // SYSCOIN
-    avail::AvailWiringLayer, eigen::BitcoinWiringLayer, celestia::CelestiaWiringLayer, eigen::EigenWiringLayer,
-    no_da::NoDAClientWiringLayer, object_store::ObjectStorageClientWiringLayer,
+    avail::AvailWiringLayer,
+    bitcoin::BitcoinWiringLayer,
+    celestia::CelestiaWiringLayer,
+    eigen::EigenWiringLayer,
+    no_da::NoDAClientWiringLayer,
+    object_store::ObjectStorageClientWiringLayer,
 };
 
 mod avail;
