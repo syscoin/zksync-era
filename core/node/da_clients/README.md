@@ -10,3 +10,4 @@ Currently, the following DataAvailability clients are implemented:
 - `Avail` that sends the pubdata to the Avail DA layer.
 - `Celestia` that sends the pubdata to the Celestia DA layer.
 - `Eigen` that sends the pubdata to the Eigen DA layer.
+- `Bitcoin` that sends the pubdata to the BitcoinDA layer on Syscoin.
