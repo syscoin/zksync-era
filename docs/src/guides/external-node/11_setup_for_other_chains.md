@@ -47,4 +47,5 @@ to the components list, e.g. for a standard list of components and DA fetcher it
 
 To configure the DA fetcher, you need to add the `da_client` config if the file-based config is used or configure in via
 the environment variables, they need to have an `EN_` prefix. If the DA client in use needs a secret to be configured -
-you need to set it in your secrets config or a corresponding environment variable. For details on configuring the Bitcoin layer see [Bitcoin DA client](../bitcoin-da-client.md).
+you need to set it in your secrets config or a corresponding environment variable. For details on configuring the
+Bitcoin layer see [Bitcoin DA client](../bitcoin-da-client.md).

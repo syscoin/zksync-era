@@ -257,7 +257,7 @@ pub(crate) async fn get_l1_da_validator(chain_config: &ChainConfig) -> anyhow::R
             let general_config = chain_config.get_general_config().await?;
             match general_config.da_client_type().as_deref() {
                 Some("Avail") => contracts_config.l1.avail_l1_da_validator_addr,
-                 // SYSCOIN
+                // SYSCOIN
                 Some("bitcoin") => contracts_config.l1.rollup_l1_da_validator_addr,
                 Some("NoDA") | None => contracts_config.l1.no_da_validium_l1_validator_addr,
                 Some("Eigen") => contracts_config.l1.no_da_validium_l1_validator_addr, // TODO: change for eigenda l1 validator for M1

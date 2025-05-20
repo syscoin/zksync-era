@@ -110,7 +110,8 @@ If you're running a system with validium without any DA, you can just set the `l
 `max_pubdata_per_batch` to some large value, and set `pubdata_overhead_part` to 0, and `compute_overhead_part` to 1.
 
 If you're running alternative DA, you should adjust the `l1_pubdata_price` to roughly cover the cost of writing one byte
-to the DA, and set `max_pubdata_per_batch` to the DA limits. See [Bitcoin DA client](../bitcoin-da-client.md) for an example of configuring an alternative layer.
+to the DA, and set `max_pubdata_per_batch` to the DA limits. See [Bitcoin DA client](../bitcoin-da-client.md) for an
+example of configuring an alternative layer.
 
 Note: currently system still requires operator to keep the data in memory and compress it, which means that setting huge
 values of `max_pubdata_per_batch` might not work. This will be fixed in the future.
