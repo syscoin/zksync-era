@@ -346,24 +346,30 @@ where
                 .with_arg("chunk_size", &chunk_size)
                 .with_arg("chunk_end", &chunk_end));
         }
-        // SYSCOIN
-        if fee_history.base_fee_per_blob_gas.len() != chunk_size + 1 {
-            let value = fee_history.base_fee_per_gas.len();
-            fee_history.base_fee_per_blob_gas = vec![U256::from(0); value];
-        }
+        // SYSCOIN: Detect Bitcoin DA mode for Syscoin.
+        let bitcoin_mode = std::env::var("DA_CLIENT")
+            .map(|v| v.eq_ignore_ascii_case("bitcoin"))
+            .unwrap_or(false);
 
-        // Per specification, the values should always be provided, and must be 0 for blocks
-        // prior to EIP-4844.
-        // https://ethereum.github.io/execution-apis/api-documentation/
         if fee_history.base_fee_per_blob_gas.len() != chunk_size + 1 {
-            let message = format!(
-                "unexpected `base_fee_per_blob_gas.len()`, expected: {}, got {}",
-                chunk_size + 1,
-                fee_history.base_fee_per_blob_gas.len()
-            );
-            return Err(EnrichedClientError::custom(message, "l1_fee_history")
-                .with_arg("chunk_size", &chunk_size)
-                .with_arg("chunk_end", &chunk_end));
+            if bitcoin_mode {
+                // SYSCOIN: Syscoin nodes may omit blob fee history as they do not
+                // support EIP-4844. Fill the missing values with zeros.
+                let value = fee_history.base_fee_per_gas.len();
+                fee_history.base_fee_per_blob_gas = vec![U256::from(0); value];
+            } else {
+                // Per specification, the values should always be provided, and must be
+                // 0 for blocks prior to EIP-4844.
+                // https://ethereum.github.io/execution-apis/api-documentation/
+                let message = format!(
+                    "unexpected `base_fee_per_blob_gas.len()`, expected: {}, got {}",
+                    chunk_size + 1,
+                    fee_history.base_fee_per_blob_gas.len()
+                );
+                return Err(EnrichedClientError::custom(message, "l1_fee_history")
+                    .with_arg("chunk_size", &chunk_size)
+                    .with_arg("chunk_end", &chunk_end));
+            }
         }
 
         // We take `chunk_size` entries for consistency with `l2_base_fee_history` which doesn't
