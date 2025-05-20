@@ -1,4 +1,4 @@
 [submodule "contracts"]
 path = contracts
 url = https://github.com/syscoin/era-contracts.git
-branch = draft-v28
+branch = release-v28
