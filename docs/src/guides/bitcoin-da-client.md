@@ -28,3 +28,24 @@ export DA_SECRETS_RPC_PASSWORD="password"
 
 For instructions on running the PoDA service and Syscoin node see the
 [Syscoin GitHub repository](https://github.com/syscoin).
+
+### `smart_config` example
+
+To configure the node with the new layered configuration format, add a fragment similar to:
+
+```yaml
+da_client:
+  client: Bitcoin
+  api_node_url: https://bitcoin-node.example.com
+  poda_url: https://poda.example.com
+```
+
+Secrets can be provided via `secrets.yaml` or environment variables:
+
+```yaml
+da_client:
+  rpc_user: user
+  rpc_password: password
+```
+
+When using Bitcoin DA for Validium, set `state_keeper.max_pubdata_per_batch` to about `2_000_000` bytes. See [Configuration Format Changes](../announcements/config_format_changes.md) for details.
