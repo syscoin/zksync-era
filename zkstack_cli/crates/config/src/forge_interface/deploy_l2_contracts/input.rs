@@ -52,7 +52,7 @@ async fn get_da_validator_type(config: &ChainConfig) -> anyhow::Result<DAValidat
     ) {
         (L1BatchCommitmentMode::Rollup, _) => Ok(DAValidatorType::Rollup),
         (L1BatchCommitmentMode::Validium, None | Some("NoDA")) => Ok(DAValidatorType::NoDA),
-                // SYSCOIN
+        // SYSCOIN
         (L1BatchCommitmentMode::Validium, Some("bitcoin")) => Ok(DAValidatorType::Rollup),
         (L1BatchCommitmentMode::Validium, Some("Avail")) => Ok(DAValidatorType::Avail),
         (L1BatchCommitmentMode::Validium, Some("Eigen")) => Ok(DAValidatorType::NoDA), // TODO: change to EigenDA for M1
