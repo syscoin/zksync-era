@@ -1,7 +1,7 @@
 # Bitcoin Data Availability client
 
 This section explains how to enable the Bitcoin DA client for zkSync nodes. The implementation leverages the
-[Syscoin PoDA service](https://github.com/syscoin) to store data off chain. PoDA is not a standard Bitcoin node: it runs
+[Syscoin PoDA service](hhttps://docs.syscoin.org/docs/tech/poda/) to store data off chain. PoDA is not a standard Bitcoin node: it runs
 on a Syscoin node that is secured by Bitcoin miners through merged mining.
 
 ## Enabling the client
@@ -27,7 +27,7 @@ export DA_SECRETS_RPC_PASSWORD="password"
 ```
 
 For instructions on running the PoDA service and Syscoin node see the
-[Syscoin GitHub repository](https://github.com/syscoin).
+[Syscoin GitHub repository](https://github.com/syscoin/syscoin).
 
 ### `smart_config` example
 
