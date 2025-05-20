@@ -1,40 +1,47 @@
-# Gateway launch
+# Launching a chain on ZK Gateway with Bitcoin DA
 
-This guide shows how to launch a gateway chain using ZK Stack.
+This tutorial shows how to deploy Gateway contracts, create the first chain using Bitcoin as the data availability layer, and run the node using the new `smart_config` format.
 
-## Ecosystem setup
+1. **Create the ecosystem and initialize contracts**
 
-Initialize the ecosystem:
+   ```bash
+   zkstack ecosystem create
+   zkstack ecosystem init
+   ```
 
-```bash
-zkstack ecosystem create
-# or
-zkstack ecosystem init
-```
+2. **Create the chain using Bitcoin Validium**
 
-## Chain creation
+   ```bash
+   zkstack chain create \
+       --l1-batch-commit-data-generator-mode validium \
+       --validium-type bitcoin
+   ```
 
-Create the chain with Bitcoin data availability:
+3. **Deploy the chain and register it on Gateway**
 
-```bash
-zkstack chain create --l1-batch-commit-data-generator-mode validium --validium-type bitcoin
-```
+  Use the gateway configuration from [`etc/env/ecosystems/gateway/stage_gateway.yaml`](../../etc/env/ecosystems/gateway/stage_gateway.yaml):
 
-## Chain initialization
+   ```bash
+   zkstack chain init --gateway-config-path ./etc/env/ecosystems/gateway/stage_gateway.yaml
+   ```
 
-Use the gateway configuration from [`etc/env/ecosystems/gateway/stage_gateway.yaml`](../../etc/env/ecosystems/gateway/stage_gateway.yaml):
+   The command deploys the contracts, registers the chain in the BridgeHub, and uses the Gateway configuration file.
 
-```bash
-zkstack chain init --gateway-config-path etc/env/ecosystems/gateway/stage_gateway.yaml
-```
+4. **Adjust the chain configuration**
 
-This generates the chain configs under `chains/<chain_name>/configs`.
-Modify `general.yaml` there to adjust Bitcoin DA parameters. You can merge overrides using `smart_config` so the changes persist across updates.
+   Edit `chains/<chain_name>/configs/general.yaml` and set
 
-## Run the server
+   ```yaml
+   state_keeper:
+     max_pubdata_per_batch: 2_000_000
+   ```
 
-Start the node:
+   Add the [Bitcoin DA smart_config](./bitcoin-da-client.md#smart_config-example) snippet for the DA client.
 
-```bash
-zkstack server
-```
+5. **Run the node**
+
+   ```bash
+   zkstack server
+   ```
+
+This launches the first zkSYS chain on Gateway with Bitcoin providing off-chain data availability
