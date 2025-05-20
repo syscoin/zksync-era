@@ -19,6 +19,8 @@ This tutorial shows how to deploy Gateway contracts, create the first chain usin
 
 3. **Deploy the chain and register it on Gateway**
 
+  Use the gateway configuration from [`etc/env/ecosystems/gateway/stage_gateway.yaml`](../../etc/env/ecosystems/gateway/stage_gateway.yaml):
+
    ```bash
    zkstack chain init --gateway-config-path ./etc/env/ecosystems/gateway/stage_gateway.yaml
    ```
@@ -42,4 +44,4 @@ This tutorial shows how to deploy Gateway contracts, create the first chain usin
    zkstack server
    ```
 
-This launches the first zkSYS chain on Gateway with Bitcoin providing off-chain data availability.
+This launches the first zkSYS chain on Gateway with Bitcoin providing off-chain data availability
