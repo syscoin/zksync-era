@@ -11,7 +11,7 @@ prefixed with `EN_` (e.g. `EN_DA_CLIENT`).
 
 ### Required variables
 
-- `BITCOIN_API_NODE_URL` &ndash; URL of the Syscoin node that exposes Bitcoin chain data.
+- `BITCOIN_API_NODE_URL` &ndash;local RPC URL of the Syscoin node that exposes BitcoinDA.
 - `BITCOIN_PODA_URL` &ndash; endpoint of the PoDA service used to publish data on the merged-mined Syscoin chain.
 - `DA_SECRETS_RPC_USER` &ndash; RPC user name for authenticating with PoDA.
 - `DA_SECRETS_RPC_PASSWORD` &ndash; RPC password for PoDA.
@@ -20,8 +20,8 @@ Put secret values into your secrets configuration or export them as environment 
 
 ```bash
 export DA_CLIENT=Bitcoin
-export BITCOIN_API_NODE_URL="https://bitcoin-node.example.com"
-export BITCOIN_PODA_URL="https://poda.example.com"
+export BITCOIN_API_NODE_URL="http://localhost:8369"
+export BITCOIN_PODA_URL="https://poda.syscoin.org"
 export DA_SECRETS_RPC_USER="user"
 export DA_SECRETS_RPC_PASSWORD="password"
 ```
@@ -36,8 +36,8 @@ To configure the node with the new layered configuration format, add a fragment 
 ```yaml
 da_client:
   client: Bitcoin
-  api_node_url: https://bitcoin-node.example.com
-  poda_url: https://poda.example.com
+  api_node_url: http://localhost:8369
+  poda_url: https://poda.syscoin.org
 ```
 
 Secrets can be provided via `secrets.yaml` or environment variables:
