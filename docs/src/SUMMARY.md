@@ -15,6 +15,7 @@
   - [Build Docker](guides/build-docker.md)
   - [Repositories](guides/repositories.md)
   - [Bitcoin DA client](guides/bitcoin-da-client.md)
+  - [Gateway launch](guides/gateway-launch.md)
 
 - [Advanced](guides/advanced/README.md)
   - [Local initialization](guides/advanced/01_initialization.md)
