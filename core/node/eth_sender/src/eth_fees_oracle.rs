@@ -68,8 +68,13 @@ impl GasAdjusterFeesOracle {
         }
         let priority_fee_per_gas = self.gas_adjuster.get_blob_tx_priority_fee();
         let blob_base_fee_per_gas = self.gas_adjuster.get_blob_tx_blob_base_fee();
-        // SYSCOIN
-        // self.assert_fee_is_not_zero(blob_base_fee_per_gas, "blob");
+        // SYSCOIN: Skip blob fee assertion when using Bitcoin DA.
+        let bitcoin_mode = std::env::var("DA_CLIENT")
+            .map(|v| v.eq_ignore_ascii_case("bitcoin"))
+            .unwrap_or(false);
+        if !bitcoin_mode {
+            self.assert_fee_is_not_zero(blob_base_fee_per_gas, "blob");
+        }
         let blob_base_fee_per_gas = Some(blob_base_fee_per_gas);
 
         if let Some(previous_sent_tx) = previous_sent_tx {
