@@ -19,12 +19,11 @@ This tutorial shows how to deploy Gateway contracts, create the first chain usin
    ```
 
 3. **Init the Gateway chain with Bitcoin DA**
-  Use the gateway configuration from [`etc/env/ecosystems/gateway/stage_gateway.yaml`](../../etc/env/ecosystems/gateway/stage_gateway.yaml):
+
    ```bash
    zkstack chain init \
        --chain gateway \
-       --validium-type bitcoin \
-       --gateway-config-path ./etc/env/ecosystems/gateway/stage_gateway.yaml
+       --validium-type bitcoin
    ```
 
 4. **Convert the chain to a Gateway settlement layer**
@@ -42,10 +41,10 @@ This tutorial shows how to deploy Gateway contracts, create the first chain usin
        --chain-id 581 \
        --l1-batch-commit-data-generator-mode rollup
 
-   # Initialize it against Gateway
+   # Initialize it against Gateway (uses addresses generated in `chains/gateway/configs/gateway.yaml`)
    zkstack chain init \
        --chain zksys \
-       --gateway-config-path ./etc/env/ecosystems/gateway/stage_gateway.yaml
+       --gateway-config-path ./chains/gateway/configs/gateway.yaml
    ```
 
    The commands deploy contracts, register the chain in BridgeHub and link it to Gateway.
