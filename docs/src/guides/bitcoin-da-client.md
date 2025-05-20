@@ -9,6 +9,20 @@ on a Syscoin node that is secured by Bitcoin miners through merged mining.
 Set `DA_CLIENT=Bitcoin` in your environment or configuration file. For the External Node the variables should be
 prefixed with `EN_` (e.g. `EN_DA_CLIENT`).
 
+If you use configuration files, the `da_client` section of `general.yaml` should look similar to the following:
+
+```yaml
+da_client:
+  client: Bitcoin
+  api_node_url: https://bitcoin-node.example.com
+  poda_url: https://poda.example.com
+```
+
+Secrets such as the RPC user and password must be stored in `secrets.yaml` or provided via environment variables.
+For the External Node use variables prefixed with `EN_`.
+
+For context on the new configuration format see [Configuration Format Changes](../announcements/config_format_changes.md).
+
 ### Required variables
 
 - `BITCOIN_API_NODE_URL` &ndash; URL of the Syscoin node that exposes Bitcoin chain data.
@@ -16,7 +30,7 @@ prefixed with `EN_` (e.g. `EN_DA_CLIENT`).
 - `DA_SECRETS_RPC_USER` &ndash; RPC user name for authenticating with PoDA.
 - `DA_SECRETS_RPC_PASSWORD` &ndash; RPC password for PoDA.
 
-Put secret values into your secrets configuration or export them as environment variables. Example:
+Example of setting parameters via environment variables:
 
 ```bash
 export DA_CLIENT=Bitcoin
