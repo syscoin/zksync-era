@@ -1746,11 +1746,8 @@ dependencies = [
  "zksync_block_reverter",
  "zksync_config",
  "zksync_contracts",
- "zksync_core_leftovers",
  "zksync_dal",
- "zksync_env_config",
  "zksync_object_store",
- "zksync_protobuf_config",
  "zksync_types",
  "zksync_vlog",
 ]
@@ -2766,13 +2763,13 @@ dependencies = [
  "bincode",
  "clap 4.5.38",
  "futures 0.3.31",
+ "serde_yaml",
  "sqlx",
  "tokio",
+ "zksync_config",
  "zksync_contracts",
- "zksync_core_leftovers",
  "zksync_dal",
  "zksync_node_genesis",
- "zksync_protobuf_config",
  "zksync_types",
 ]
 
@@ -4052,12 +4049,9 @@ dependencies = [
  "tracing",
  "zksync_config",
  "zksync_contracts",
- "zksync_core_leftovers",
  "zksync_dal",
- "zksync_env_config",
  "zksync_node_genesis",
  "zksync_protobuf",
- "zksync_protobuf_config",
  "zksync_types",
 ]
 
@@ -5549,10 +5543,8 @@ dependencies = [
  "tokio",
  "tracing",
  "vise",
- "zksync_config",
  "zksync_eth_client",
  "zksync_eth_signer",
- "zksync_system_constants",
  "zksync_test_contracts",
  "zksync_types",
  "zksync_utils",
@@ -5723,7 +5715,6 @@ dependencies = [
  "clap 4.5.38",
  "tracing",
  "zksync_config",
- "zksync_env_config",
  "zksync_merkle_tree",
  "zksync_storage",
  "zksync_types",
@@ -9012,6 +9003,44 @@ dependencies = [
 ]
 
 [[package]]
+name = "smart-config"
+version = "0.1.0"
+source = "git+https://github.com/matter-labs/smart-config.git?rev=ae8d1a179731cf131d58d28daa5ae98df2609e8a#ae8d1a179731cf131d58d28daa5ae98df2609e8a"
+dependencies = [
+ "anyhow",
+ "compile-fmt",
+ "primitive-types",
+ "secrecy 0.10.3",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "smart-config-derive",
+ "tracing",
+]
+
+[[package]]
+name = "smart-config-commands"
+version = "0.1.0"
+source = "git+https://github.com/matter-labs/smart-config.git?rev=ae8d1a179731cf131d58d28daa5ae98df2609e8a#ae8d1a179731cf131d58d28daa5ae98df2609e8a"
+dependencies = [
+ "anstream",
+ "anstyle",
+ "serde_json",
+ "serde_yaml",
+ "smart-config",
+]
+
+[[package]]
+name = "smart-config-derive"
+version = "0.1.0"
+source = "git+https://github.com/matter-labs/smart-config.git?rev=ae8d1a179731cf131d58d28daa5ae98df2609e8a#ae8d1a179731cf131d58d28daa5ae98df2609e8a"
+dependencies = [
+ "proc-macro2 1.0.95",
+ "quote 1.0.40",
+ "syn 2.0.100",
+]
+
+[[package]]
 name = "snafu"
 version = "0.8.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -9045,9 +9074,7 @@ dependencies = [
  "tracing",
  "vise",
  "zksync_config",
- "zksync_core_leftovers",
  "zksync_dal",
- "zksync_env_config",
  "zksync_object_store",
  "zksync_types",
  "zksync_vlog",
@@ -10660,7 +10687,6 @@ dependencies = [
  "tokio",
  "zksync_config",
  "zksync_dal",
- "zksync_env_config",
  "zksync_types",
 ]
 
@@ -12020,10 +12046,14 @@ name = "zksync_config"
 version = "28.2.1-non-semver-compat"
 dependencies = [
  "anyhow",
+ "clap 4.5.37",
  "rand 0.8.5",
  "secrecy 0.10.3",
  "serde",
  "serde_json",
+ "serde_yaml",
+ "smart-config",
+ "smart-config-commands",
  "tracing",
  "zksync_basic_types",
  "zksync_concurrency",
@@ -12249,10 +12279,7 @@ dependencies = [
  "tracing",
  "zksync_config",
  "zksync_contract_verifier_lib",
- "zksync_core_leftovers",
  "zksync_dal",
- "zksync_env_config",
- "zksync_protobuf_config",
  "zksync_queued_job_processor",
  "zksync_task_management",
  "zksync_types",
@@ -12316,9 +12343,7 @@ dependencies = [
  "serde_yaml",
  "tokio",
  "zksync_config",
- "zksync_env_config",
  "zksync_protobuf",
- "zksync_protobuf_config",
 ]
 
 [[package]]
@@ -12389,6 +12414,7 @@ dependencies = [
  "rust-eigenda-client",
  "scale-encode",
  "secp256k1",
+ "secrecy 0.10.3",
  "serde",
  "serde_json",
  "sha2 0.10.8",
@@ -12402,7 +12428,6 @@ dependencies = [
  "zksync_config",
  "zksync_da_client",
  "zksync_dal",
- "zksync_env_config",
  "zksync_node_framework",
  "zksync_object_store",
  "zksync_types",
@@ -12486,18 +12511,6 @@ dependencies = [
  "tracing",
  "vise",
  "zksync_basic_types",
-]
-
-[[package]]
-name = "zksync_env_config"
-version = "28.2.1-non-semver-compat"
-dependencies = [
- "anyhow",
- "envy",
- "serde",
- "zksync_basic_types",
- "zksync_config",
- "zksync_system_constants",
 ]
 
 [[package]]
@@ -12612,6 +12625,9 @@ dependencies = [
  "rustc_version 0.4.1",
  "serde",
  "serde_json",
+ "serde_yaml",
+ "smart-config",
+ "smart-config-commands",
  "tempfile",
  "test-casing",
  "tokio",
@@ -12626,10 +12642,8 @@ dependencies = [
  "zksync_consensus_roles",
  "zksync_consistency_checker",
  "zksync_contracts",
- "zksync_core_leftovers",
  "zksync_da_clients",
  "zksync_dal",
- "zksync_env_config",
  "zksync_eth_client",
  "zksync_eth_sender",
  "zksync_gateway_migrator",
@@ -12646,7 +12660,6 @@ dependencies = [
  "zksync_node_storage_init",
  "zksync_node_sync",
  "zksync_object_store",
- "zksync_protobuf_config",
  "zksync_reorg_detector",
  "zksync_snapshots_applier",
  "zksync_state",
@@ -13237,13 +13250,13 @@ dependencies = [
  "rand 0.8.5",
  "reqwest 0.12.15",
  "serde_json",
+ "smart-config",
  "tempfile",
  "tokio",
  "tracing",
  "tracing-subscriber",
  "vise",
  "zksync_config",
- "zksync_core_leftovers",
  "zksync_node_framework",
  "zksync_protobuf",
  "zksync_types",
@@ -13330,26 +13343,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "zksync_protobuf_config"
-version = "28.2.1-non-semver-compat"
-dependencies = [
- "anyhow",
- "hex",
- "prost 0.12.6",
- "rand 0.8.5",
- "secrecy 0.10.3",
- "serde_json",
- "serde_yaml",
- "tracing",
- "zksync_basic_types",
- "zksync_concurrency",
- "zksync_config",
- "zksync_protobuf",
- "zksync_protobuf_build",
- "zksync_types",
-]
-
-[[package]]
 name = "zksync_prover_interface"
 version = "28.2.1-non-semver-compat"
 dependencies = [
@@ -13410,6 +13403,8 @@ dependencies = [
  "clap 4.5.38",
  "futures 0.3.31",
  "serde_json",
+ "smart-config",
+ "smart-config-commands",
  "tikv-jemallocator",
  "tokio",
  "tracing",
@@ -13426,7 +13421,6 @@ dependencies = [
  "zksync_da_clients",
  "zksync_da_dispatcher",
  "zksync_dal",
- "zksync_env_config",
  "zksync_eth_client",
  "zksync_eth_sender",
  "zksync_eth_watch",
@@ -13443,7 +13437,6 @@ dependencies = [
  "zksync_node_storage_init",
  "zksync_object_store",
  "zksync_proof_data_handler",
- "zksync_protobuf_config",
  "zksync_state",
  "zksync_state_keeper",
  "zksync_storage",
@@ -13657,12 +13650,12 @@ version = "28.2.1-non-semver-compat"
 dependencies = [
  "anyhow",
  "async-trait",
- "envy",
  "hex",
  "reqwest 0.12.15",
  "secp256k1",
  "serde",
  "serde_json",
+ "smart-config",
  "thiserror 2.0.12",
  "tokio",
  "tracing",
@@ -13671,7 +13664,6 @@ dependencies = [
  "zksync_basic_types",
  "zksync_config",
  "zksync_crypto_primitives",
- "zksync_env_config",
  "zksync_node_framework",
  "zksync_tee_prover_interface",
  "zksync_tee_verifier",
