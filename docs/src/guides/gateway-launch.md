@@ -49,14 +49,15 @@ This tutorial shows how to deploy Gateway contracts, create the first chain usin
 
    The commands deploy contracts, register the chain in BridgeHub and link it to Gateway.
 
-6. **Adjust the Gateway chain configuration**
+6. **Adjust the Gateway/zkSYS chain configuration**
 
-   Edit `chains/<chain_name>/configs/general.yaml` and set
+   Edit `chains/gateway/configs/general.yaml` and set
 
    ```yaml
    state_keeper:
      max_pubdata_per_batch: 2_000_000
    ```
+   You may also want to edit the zkSYS configuration as well to update max_pubdata_per_batch.
 
    Add the [Bitcoin DA smart_config](./bitcoin-da-client.md#smart_config-example) snippet for the DA client.
 
