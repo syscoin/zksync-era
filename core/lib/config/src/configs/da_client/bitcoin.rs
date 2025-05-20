@@ -1,4 +1,4 @@
-use smart_config::{de::FromSecretString, DescribeConfig, DeserializeConfig};
+use smart_config::{DescribeConfig, DeserializeConfig};
 
 #[derive(Clone, Debug, PartialEq, DescribeConfig, DeserializeConfig)]
 pub struct BitcoinConfig {
@@ -8,8 +8,6 @@ pub struct BitcoinConfig {
 
 #[derive(Clone, Debug, DescribeConfig, DeserializeConfig)]
 pub struct BitcoinSecrets {
-    #[config(with = Optional(FromSecretString))]
     pub rpc_user: String,
-    #[config(with = Optional(FromSecretString))]
     pub rpc_password: String,
 }
