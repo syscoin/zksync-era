@@ -55,7 +55,7 @@ This tutorial shows how to deploy Gateway contracts, create the first chain usin
 
    ```yaml
    state_keeper:
-     max_pubdata_per_batch: 2_000_000
+     max_pubdata_per_batch: 750_000
    ```
    You may also want to edit the zkSYS configuration as well to update max_pubdata_per_batch.
 

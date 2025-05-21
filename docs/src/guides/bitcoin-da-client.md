@@ -48,4 +48,4 @@ da_client:
   rpc_password: password
 ```
 
-When using Bitcoin DA for Validium, set `state_keeper.max_pubdata_per_batch` to about `2_000_000` bytes. See [Configuration Format Changes](../announcements/config_format_changes.md) for details.
+When using Bitcoin DA for Validium, set `state_keeper.max_pubdata_per_batch` to about `750_000` bytes. It can support 2MB but the circuits currently support around 761856 bytes (based on 6 EIP4844 blobs). This will naturally increase which comes at the cost of additional pubdata slots (at 2mb it will use 200mb RAM for the bootloader). For now we keep it under the pre-configured circuit, slot and bootloader limits.
