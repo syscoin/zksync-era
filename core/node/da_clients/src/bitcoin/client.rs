@@ -1,6 +1,7 @@
 use std::{
     fmt::{Debug, Formatter},
     sync::Arc,
+    time::Duration,
 };
 
 use anyhow::{anyhow, Result};
@@ -48,12 +49,15 @@ pub struct BitcoinDAClient {
 
 impl BitcoinDAClient {
     pub fn new(config: BitcoinServerConfig, secrets: BitcoinSecrets) -> Result<Self> {
+        let timeout = Some(Duration::from_secs(30));
+        let wallet     = "wallet200999";
         let client = SyscoinClient::new(
             &config.api_node_url,
             &secrets.rpc_user,
             &secrets.rpc_password,
             &config.poda_url,
-            None,
+            timeout,
+            wallet,
         )
         .map_err(|e| anyhow!("Failed to create SyscoinClient: {}", e))?;
 

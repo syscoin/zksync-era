@@ -1590,7 +1590,7 @@ checksum = "9425c3bf7089c983facbae04de54513cce73b41c7f9ff8c845b54e7bc64ebbfb"
 [[package]]
 name = "bitcoin_da_client"
 version = "0.1.4"
-source = "git+https://github.com/SYS-Labs/bitcoin_da_client.git#d69bbb6cc8058e0e664412d6efa123d2cbaf9be5"
+source = "git+https://github.com/SYS-Labs/bitcoin_da_client.git?branch=update-lib#8c7c49b18c6f0d2bad9f5f309c0ce3a633c282c8"
 dependencies = [
  "async-trait",
  "hex",
@@ -1600,6 +1600,7 @@ dependencies = [
  "serde_json",
  "tokio",
  "tracing",
+ "tracing-subscriber",
 ]
 
 [[package]]
@@ -9037,7 +9038,7 @@ source = "git+https://github.com/matter-labs/smart-config.git?rev=ae8d1a179731cf
 dependencies = [
  "proc-macro2 1.0.95",
  "quote 1.0.40",
- "syn 2.0.100",
+ "syn 2.0.101",
 ]
 
 [[package]]
@@ -12046,7 +12047,7 @@ name = "zksync_config"
 version = "28.2.1-non-semver-compat"
 dependencies = [
  "anyhow",
- "clap 4.5.37",
+ "clap 4.5.38",
  "rand 0.8.5",
  "secrecy 0.10.3",
  "serde",
