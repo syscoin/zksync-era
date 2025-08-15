@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use anyhow::{anyhow, Context};
 use async_trait::async_trait;
+use chrono::{DateTime, Utc};
 use http::StatusCode;
 use jsonrpsee::ws_client::WsClientBuilder;
 use reqwest::Url;
@@ -15,7 +16,7 @@ use zksync_da_client::{
 use zksync_types::{
     ethabi::{self, Token},
     web3::contract::Tokenize,
-    H256, U256,
+    SLChainId, H256, U256,
 };
 
 use crate::{
@@ -35,6 +36,7 @@ pub struct AvailClient {
     config: AvailConfig,
     sdk_client: Arc<AvailClientMode>,
     api_client: Arc<reqwest::Client>, // bridge API reqwest client
+    sl_chain_id: SLChainId,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
@@ -122,9 +124,13 @@ impl Tokenize for MerkleProofInput {
 }
 
 impl AvailClient {
-    pub async fn new(config: AvailConfig, secrets: AvailSecrets) -> anyhow::Result<Self> {
+    pub async fn new(
+        config: AvailConfig,
+        secrets: AvailSecrets,
+        sl_chain_id: SLChainId,
+    ) -> anyhow::Result<Self> {
         let api_client = Arc::new(reqwest::Client::new());
-        match config.config.clone() {
+        let sdk_client = match config.config.clone() {
             AvailClientConfig::GasRelay(conf) => {
                 let gas_relay_api_key = secrets
                     .gas_relay_api_key
@@ -136,11 +142,8 @@ impl AvailClient {
                     Arc::clone(&api_client),
                 )
                 .await?;
-                Ok(Self {
-                    config,
-                    sdk_client: Arc::new(AvailClientMode::GasRelay(gas_relay_client)),
-                    api_client,
-                })
+
+                Arc::new(AvailClientMode::GasRelay(gas_relay_client))
             }
             AvailClientConfig::FullClient(conf) => {
                 let seed_phrase = secrets.seed_phrase.context("Seed phrase is missing")?;
@@ -148,18 +151,20 @@ impl AvailClient {
                 let sdk_client = RawAvailClient::new(
                     conf.app_id,
                     seed_phrase.0.expose_secret(),
-                    conf.finality_state,
-                    conf.dispatch_timeout,
+                    conf.max_blocks_to_look_back,
                 )
                 .await?;
 
-                Ok(Self {
-                    config,
-                    sdk_client: Arc::new(AvailClientMode::Default(Box::new(sdk_client))),
-                    api_client,
-                })
+                Arc::new(AvailClientMode::Default(Box::new(sdk_client)))
             }
-        }
+        };
+
+        Ok(Self {
+            config,
+            sdk_client,
+            api_client,
+            sl_chain_id,
+        })
     }
 }
 
@@ -186,15 +191,18 @@ impl DataAvailabilityClient for AvailClient {
                     .await
                     .map_err(to_non_retriable_da_error)?;
 
-                let block_hash = client
-                    .submit_extrinsic(&ws_client, extrinsic.as_str())
-                    .await
-                    .map_err(to_non_retriable_da_error)?;
-                let tx_id = client
-                    .get_tx_id(&ws_client, block_hash.as_str(), extrinsic.as_str())
-                    .await
-                    .map_err(to_non_retriable_da_error)?;
-                Ok(DispatchResponse::from(format!("{}:{}", block_hash, tx_id)))
+                let extrinsic_hash = tokio::time::timeout(
+                    default_config.dispatch_timeout,
+                    client.submit_extrinsic(&ws_client, extrinsic.as_str()),
+                )
+                .await
+                .map_err(|_| DAError {
+                    error: anyhow!("Timeout while submitting extrinsic"),
+                    is_retriable: true,
+                })?
+                .map_err(to_retriable_da_error)?;
+
+                Ok(DispatchResponse::from(extrinsic_hash))
             }
             AvailClientMode::GasRelay(client) => {
                 let submission_id = client
@@ -211,11 +219,40 @@ impl DataAvailabilityClient for AvailClient {
     async fn ensure_finality(
         &self,
         dispatch_request_id: String,
+        dispatched_at: DateTime<Utc>,
     ) -> Result<Option<FinalityResponse>, DAError> {
         Ok(match self.sdk_client.as_ref() {
-            AvailClientMode::Default(_) => Some(FinalityResponse {
-                blob_id: dispatch_request_id,
-            }),
+            AvailClientMode::Default(client) => {
+                let default_config = match &self.config.config {
+                    AvailClientConfig::FullClient(conf) => conf,
+                    _ => unreachable!(), // validated in protobuf config
+                };
+
+                if Utc::now()
+                    .signed_duration_since(dispatched_at)
+                    .to_std()
+                    .map_err(to_retriable_da_error)?
+                    > default_config.dispatch_timeout
+                {
+                    return Err(DAError {
+                        error: anyhow!("Dispatch timeout exceeded"),
+                        is_retriable: false,
+                    });
+                }
+
+                let ws_client = WsClientBuilder::default()
+                    .build(default_config.api_node_url.clone().as_str())
+                    .await
+                    .map_err(to_non_retriable_da_error)?;
+
+                client
+                    .search_for_ext_in_latest_block(&ws_client, &dispatch_request_id)
+                    .await
+                    .map_err(to_retriable_da_error)?
+                    .map(|(block_hash, tx_id)| FinalityResponse {
+                        blob_id: format!("{}:{}", block_hash, tx_id),
+                    })
+            }
             AvailClientMode::GasRelay(client) => {
                 let Some((block_hash, extrinsic_index)) = client
                     .check_finality(dispatch_request_id)
@@ -245,7 +282,13 @@ impl DataAvailabilityClient for AvailClient {
                 error: anyhow!("Invalid URL"),
                 is_retriable: false,
             })?
-            .join(format!("/eth/proof/{}?index={}", block_hash, tx_idx).as_str())
+            .join(
+                format!(
+                    "/v1/proof/{}?block_hash={}&index={}",
+                    self.sl_chain_id, block_hash, tx_idx
+                )
+                .as_str(),
+            )
             .map_err(|_| DAError {
                 error: anyhow!("Unable to join to URL"),
                 is_retriable: false,

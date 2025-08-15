@@ -61,7 +61,8 @@ pub async fn run(args: EcosystemInitArgs, shell: &Shell) -> anyhow::Result<()> {
 
     let mut final_ecosystem_args = args
         .clone()
-        .fill_values_with_prompt(ecosystem_config.l1_network);
+        .fill_values_with_prompt(ecosystem_config.l1_network)
+        .await?;
 
     logger::info(MSG_INITIALIZING_ECOSYSTEM);
 
@@ -394,6 +395,7 @@ async fn init_chains(
             dev: final_init_args.dev,
             validium_args: final_init_args.validium_args.clone(),
             server_command: genesis_args.server_command.clone(),
+            make_permanent_rollup: init_args.make_permanent_rollup,
         };
         let final_chain_init_args = chain_init_args.fill_values_with_prompt(&chain_config);
 

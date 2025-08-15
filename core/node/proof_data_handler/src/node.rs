@@ -1,6 +1,9 @@
 use std::sync::Arc;
 
-use zksync_config::configs::{fri_prover_gateway::ApiMode, ProofDataHandlerConfig};
+use zksync_config::configs::{
+    eth_proof_manager::EthProofManagerConfig, proof_data_handler::ProvingMode,
+    ProofDataHandlerConfig,
+};
 use zksync_dal::{
     node::{MasterPool, PoolResource},
     ConnectionPool, Core,
@@ -11,44 +14,41 @@ use zksync_node_framework::{
     wiring_layer::{WiringError, WiringLayer},
     FromContext, IntoContext,
 };
-use zksync_object_store::{node::ObjectStoreResource, ObjectStore};
-use zksync_types::{commitment::L1BatchCommitmentMode, L2ChainId};
+use zksync_object_store::ObjectStore;
+use zksync_types::L2ChainId;
 
-use crate::ProofDataHandlerClient;
+use crate::{client::ProofDataHandlerClient, proof_router::ProofRouter};
 
 /// Wiring layer for proof data handler server.
 #[derive(Debug)]
 pub struct ProofDataHandlerLayer {
     proof_data_handler_config: ProofDataHandlerConfig,
-    commitment_mode: L1BatchCommitmentMode,
+    eth_proof_manager_config: EthProofManagerConfig,
     l2_chain_id: L2ChainId,
-    api_mode: ApiMode,
 }
 
 #[derive(Debug, FromContext)]
 pub struct Input {
-    pub master_pool: PoolResource<MasterPool>,
-    pub object_store: ObjectStoreResource,
+    master_pool: PoolResource<MasterPool>,
+    object_store: Arc<dyn ObjectStore>,
 }
 
 #[derive(Debug, IntoContext)]
 pub struct Output {
     #[context(task)]
-    pub task: ProofDataHandlerTask,
+    task: ProofDataHandlerTask,
 }
 
 impl ProofDataHandlerLayer {
     pub fn new(
         proof_data_handler_config: ProofDataHandlerConfig,
-        commitment_mode: L1BatchCommitmentMode,
+        eth_proof_manager_config: EthProofManagerConfig,
         l2_chain_id: L2ChainId,
-        api_mode: ApiMode,
     ) -> Self {
         Self {
             proof_data_handler_config,
-            commitment_mode,
+            eth_proof_manager_config,
             l2_chain_id,
-            api_mode,
         }
     }
 }
@@ -64,15 +64,14 @@ impl WiringLayer for ProofDataHandlerLayer {
 
     async fn wire(self, input: Self::Input) -> Result<Self::Output, WiringError> {
         let main_pool = input.master_pool.get().await?;
-        let blob_store = input.object_store.0;
+        let blob_store = input.object_store;
 
         let task = ProofDataHandlerTask {
             proof_data_handler_config: self.proof_data_handler_config,
+            eth_proof_manager_config: self.eth_proof_manager_config,
             blob_store,
             main_pool,
-            commitment_mode: self.commitment_mode,
             l2_chain_id: self.l2_chain_id,
-            api_mode: self.api_mode,
         };
 
         Ok(Output { task })
@@ -82,10 +81,9 @@ impl WiringLayer for ProofDataHandlerLayer {
 #[derive(Debug)]
 pub struct ProofDataHandlerTask {
     proof_data_handler_config: ProofDataHandlerConfig,
+    eth_proof_manager_config: EthProofManagerConfig,
     blob_store: Arc<dyn ObjectStore>,
     main_pool: ConnectionPool<Core>,
-    api_mode: ApiMode,
-    commitment_mode: L1BatchCommitmentMode,
     l2_chain_id: L2ChainId,
 }
 
@@ -96,39 +94,33 @@ impl Task for ProofDataHandlerTask {
     }
 
     async fn run(self: Box<Self>, stop_receiver: StopReceiver) -> anyhow::Result<()> {
-        let server_task = crate::run_server(
-            self.proof_data_handler_config.clone(),
-            self.blob_store.clone(),
+        let client = ProofDataHandlerClient::new(
+            self.blob_store,
             self.main_pool.clone(),
-            self.commitment_mode,
+            self.proof_data_handler_config.clone(),
             self.l2_chain_id,
-            self.api_mode.clone(),
-            stop_receiver.clone().0,
         );
 
-        if self.api_mode == ApiMode::Legacy {
-            server_task.await
-        } else {
-            let client = ProofDataHandlerClient::new(
-                self.blob_store,
+        if self.proof_data_handler_config.proving_mode == ProvingMode::ProvingNetwork {
+            let proof_router: ProofRouter = ProofRouter::new(
                 self.main_pool,
-                self.proof_data_handler_config,
-                self.commitment_mode,
-                self.l2_chain_id,
+                self.eth_proof_manager_config.acknowledgment_timeout,
+                self.eth_proof_manager_config.proof_generation_timeout,
+                self.eth_proof_manager_config.picking_timeout,
             );
 
-            let client_task = client.run(stop_receiver.0);
-
             tokio::select! {
-                _ = server_task => {
-                    tracing::info!("Proof data handler server stopped");
-                }
-                _ = client_task => {
+                _ = client.run(stop_receiver.0.clone()) => {
                     tracing::info!("Proof data handler client stopped");
                 }
+                _ = proof_router.run(stop_receiver.0) => {
+                    tracing::info!("Proof router stopped");
+                }
             }
-
-            Ok(())
+        } else {
+            client.run(stop_receiver.0).await?;
         }
+
+        Ok(())
     }
 }

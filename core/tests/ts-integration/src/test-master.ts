@@ -5,6 +5,7 @@ import { claimEtherBack } from './context-owner';
 import { EthersRetryProvider, RetryableWallet, RetryProvider } from './retry-provider';
 import { Reporter } from './reporter';
 import { bigIntReviver, isLocalHost } from './helpers';
+import fetch from 'node-fetch';
 
 /**
  * Test master is a singleton class (per suite) that is capable of providing wallets to the suite.
@@ -21,8 +22,10 @@ export class TestMaster {
     readonly reporter: Reporter;
     private readonly l1Provider: EthersRetryProvider;
     private readonly l2Provider: RetryProvider;
+    private readonly l2ProviderSecondChain: RetryProvider | undefined;
 
     private readonly mainWallet: RetryableWallet;
+    private readonly mainWalletSecondChain: RetryableWallet | undefined;
     private readonly subAccounts: zksync.Wallet[] = [];
 
     private constructor(file: string) {
@@ -72,6 +75,31 @@ export class TestMaster {
         }
 
         this.mainWallet = new RetryableWallet(suiteWalletPK, this.l2Provider, this.l1Provider);
+
+        if (this.env.l2ChainIdSecondChain) {
+            // Set up second chain provider if defined
+            this.l2ProviderSecondChain = new RetryProvider(
+                {
+                    url: this.env.l2NodeUrlSecondChain!,
+                    timeout: 1200 * 1000
+                },
+                undefined,
+                this.reporter
+            );
+            this.mainWalletSecondChain = new RetryableWallet(
+                suiteWalletPK,
+                this.l2ProviderSecondChain,
+                this.l1Provider
+            );
+
+            if (isLocalHost(context.environment.network)) {
+                // Setup small polling interval on localhost to speed up tests.
+                this.l2ProviderSecondChain.pollingInterval = 100;
+            } else {
+                // Poll less frequently to not make the server sad.
+                this.l2ProviderSecondChain.pollingInterval = 5000;
+            }
+        }
     }
 
     /**
@@ -106,6 +134,14 @@ export class TestMaster {
     }
 
     /**
+     * Getter for the main (funded) account in the second chain exclusive to the suite, used for interop tests.
+     * Defaults to the same as `mainAccount` if the second chain is not set.
+     */
+    mainAccountSecondChain(): RetryableWallet | undefined {
+        return this.mainWalletSecondChain;
+    }
+
+    /**
      * Generates a new random empty account.
      * After the test suite is completed, funds from accounts created via this method
      * are recollected back to the main account.
@@ -117,6 +153,44 @@ export class TestMaster {
         return newWallet;
     }
 
+    /**
+     * Creates a user and returns just the access token.
+     */
+    async privateRpcToken(baseUrl: string, address: string, secret = 'sososecret'): Promise<string> {
+        const res = await fetch(`${baseUrl}/users`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ address, secret })
+        });
+
+        if (!res.ok) {
+            throw new Error(`createUser: ${res.status} ${res.statusText} for ${address}`);
+        }
+
+        const { token } = (await res.json()) as { ok: boolean; token: string };
+        return token;
+    }
+
+    async privateRpcProvider(baseUrl: string, address: string, secret = 'sososecret'): Promise<RetryProvider> {
+        const token = await this.privateRpcToken(baseUrl, address, secret);
+        const url = `${baseUrl}/rpc/${token}`;
+        return new RetryProvider({ url, timeout: 120_000 }, undefined, this.reporter) as any;
+    }
+
+    async privateRpcMainAccount(baseUrl: string, secret = 'sososecret'): Promise<RetryableWallet> {
+        const address = this.mainWallet.address;
+        const provider = await this.privateRpcProvider(baseUrl, address, secret);
+        return new RetryableWallet(this.mainWallet.privateKey, provider, this.l1Provider);
+    }
+
+    async privateRpcNewEmptyAccount(baseUrl: string, secret = 'sososecret'): Promise<RetryableWallet> {
+        const randomPK = ethers.Wallet.createRandom().privateKey;
+        const address = new ethers.Wallet(randomPK).address;
+        const provider = await this.privateRpcProvider(baseUrl, address, secret);
+        const newWallet = new RetryableWallet(randomPK, provider, this.l1Provider);
+        this.subAccounts.push(newWallet);
+        return newWallet;
+    }
     /**
      * Getter for the test environment.
      */

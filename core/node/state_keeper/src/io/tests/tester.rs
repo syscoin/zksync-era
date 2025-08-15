@@ -20,7 +20,7 @@ use zksync_multivm::{
 };
 use zksync_node_fee_model::{
     l1_gas_price::{GasAdjuster, GasAdjusterClient},
-    MainNodeFeeInputProvider, NoOpRatioProvider,
+    MainNodeFeeInputProvider,
 };
 use zksync_node_genesis::create_genesis_l1_batch;
 use zksync_node_test_utils::{
@@ -29,13 +29,14 @@ use zksync_node_test_utils::{
 use zksync_types::{
     block::L2BlockHeader,
     commitment::L1BatchCommitmentMode,
-    fee_model::{BatchFeeInput, FeeModelConfig, FeeModelConfigV2},
+    fee_model::{BaseTokenConversionRatio, BatchFeeInput, FeeModelConfig, FeeModelConfigV2},
     l2::L2Tx,
     protocol_version::{L1VerifierConfig, ProtocolSemanticVersion},
     pubdata_da::PubdataSendingMode,
+    settlement::SettlementLayer,
     system_contracts::get_system_smart_contracts,
-    L2BlockNumber, L2ChainId, PriorityOpId, ProtocolVersionId, TransactionTimeRangeConstraint,
-    H256,
+    L2BlockNumber, L2ChainId, PriorityOpId, ProtocolVersionId, SLChainId,
+    TransactionTimeRangeConstraint, H256,
 };
 
 use crate::{MempoolGuard, MempoolIO};
@@ -103,7 +104,7 @@ impl Tester {
 
         MainNodeFeeInputProvider::new(
             gas_adjuster,
-            Arc::new(NoOpRatioProvider::default()),
+            Arc::<BaseTokenConversionRatio>::default(),
             FeeModelConfig::V2(FeeModelConfigV2 {
                 minimal_l2_gas_price: self.minimal_l2_gas_price(),
                 compute_overhead_part: 1.0,
@@ -127,7 +128,7 @@ impl Tester {
         let gas_adjuster = Arc::new(self.create_gas_adjuster().await);
         let batch_fee_input_provider = MainNodeFeeInputProvider::new(
             gas_adjuster,
-            Arc::new(NoOpRatioProvider::default()),
+            Arc::<BaseTokenConversionRatio>::default(),
             FeeModelConfig::V2(FeeModelConfigV2 {
                 minimal_l2_gas_price: self.minimal_l2_gas_price(),
                 compute_overhead_part: 1.0,
@@ -138,7 +139,8 @@ impl Tester {
             }),
         );
 
-        let mempool = MempoolGuard::new(PriorityOpId(0), 100);
+        let chain_id = SLChainId(505);
+        let mempool = MempoolGuard::new(PriorityOpId(0), 100, None, None);
         let config = StateKeeperConfig {
             minimal_l2_gas_price: self.minimal_l2_gas_price(),
             validation_computational_gas_limit: BATCH_COMPUTATIONAL_GAS_LIMIT,
@@ -155,6 +157,7 @@ impl Tester {
             L2ChainId::from(270),
             Some(Default::default()),
             Default::default(),
+            Some(SettlementLayer::L1(chain_id)),
         )
         .unwrap();
 
@@ -231,9 +234,10 @@ impl Tester {
         &self,
         pool: &ConnectionPool<Core>,
         number: u32,
-        tx_results: &[TransactionExecutionResult],
+        tx_hashes: &[H256],
     ) {
-        let batch_header = create_l1_batch(number);
+        let mut batch_header = create_l1_batch(number);
+        batch_header.timestamp = self.current_timestamp;
         let mut storage = pool.connection_tagged("state_keeper").await.unwrap();
         storage
             .blocks_dal()
@@ -247,12 +251,28 @@ impl Tester {
             .unwrap();
         storage
             .transactions_dal()
-            .mark_txs_as_executed_in_l1_batch(batch_header.number, tx_results)
+            .mark_txs_as_executed_in_l1_batch(batch_header.number, tx_hashes)
             .await
             .unwrap();
         storage
             .blocks_dal()
             .set_l1_batch_hash(batch_header.number, H256::default())
+            .await
+            .unwrap();
+    }
+
+    pub(super) async fn insert_unsealed_batch(
+        &self,
+        pool: &ConnectionPool<Core>,
+        number: u32,
+        fee_input: BatchFeeInput,
+    ) {
+        let mut batch_header = create_l1_batch(number);
+        batch_header.batch_fee_input = fee_input;
+        let mut storage = pool.connection_tagged("state_keeper").await.unwrap();
+        storage
+            .blocks_dal()
+            .insert_l1_batch(batch_header.to_unsealed_header())
             .await
             .unwrap();
     }

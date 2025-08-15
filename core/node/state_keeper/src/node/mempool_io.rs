@@ -1,9 +1,12 @@
+use std::sync::Arc;
+
 use anyhow::Context as _;
 use zksync_config::configs::{
     chain::{MempoolConfig, StateKeeperConfig},
     wallets,
 };
 use zksync_dal::node::{MasterPool, PoolResource};
+use zksync_eth_client::web3_decl::node::SettlementModeResource;
 use zksync_node_fee_model::node::SequencerFeeInputResource;
 use zksync_node_framework::{
     service::StopReceiver,
@@ -11,11 +14,14 @@ use zksync_node_framework::{
     wiring_layer::{WiringError, WiringLayer},
     FromContext, IntoContext,
 };
-use zksync_shared_resources::contracts::{L2ContractsResource, SettlementLayerContractsResource};
+use zksync_shared_resources::contracts::L2ContractsResource;
 use zksync_types::{commitment::PubdataType, L2ChainId};
+use zksync_vm_executor::node::ApiTransactionFilter;
 
-use super::resources::{ConditionalSealerResource, StateKeeperIOResource};
-use crate::{MempoolFetcher, MempoolGuard, MempoolIO, SequencerSealer};
+use super::resources::StateKeeperIOResource;
+use crate::{
+    seal_criteria::ConditionalSealer, MempoolFetcher, MempoolGuard, MempoolIO, SequencerSealer,
+};
 
 /// Wiring layer for `MempoolIO`, an IO part of state keeper used by the main node.
 ///
@@ -43,18 +49,19 @@ pub struct MempoolIOLayer {
 
 #[derive(Debug, FromContext)]
 pub struct Input {
-    pub fee_input: SequencerFeeInputResource,
-    pub master_pool: PoolResource<MasterPool>,
-    pub sl_contracts: SettlementLayerContractsResource,
-    pub l2_contracts: L2ContractsResource,
+    fee_input: SequencerFeeInputResource,
+    master_pool: PoolResource<MasterPool>,
+    l2_contracts: L2ContractsResource,
+    settlement_mode: SettlementModeResource,
 }
 
 #[derive(Debug, IntoContext)]
 pub struct Output {
-    pub state_keeper_io: StateKeeperIOResource,
-    pub conditional_sealer: ConditionalSealerResource,
+    state_keeper_io: StateKeeperIOResource,
+    conditional_sealer: Arc<dyn ConditionalSealer>,
+    api_transaction_filter: ApiTransactionFilter,
     #[context(task)]
-    pub mempool_fetcher: MempoolFetcher,
+    mempool_fetcher: MempoolFetcher,
 }
 
 impl MempoolIOLayer {
@@ -86,7 +93,15 @@ impl MempoolIOLayer {
             .connection()
             .await
             .context("Access storage to build mempool")?;
-        let mempool = MempoolGuard::from_storage(&mut storage, self.mempool_config.capacity).await;
+        let mempool = MempoolGuard::from_storage(
+            &mut storage,
+            self.mempool_config.capacity,
+            self.mempool_config.high_priority_l2_tx_initiator,
+            self.mempool_config
+                .high_priority_l2_tx_protocol_version
+                .map(|v| (v as u16).try_into().unwrap()),
+        )
+        .await;
         mempool.register_metrics();
         Ok(mempool)
     }
@@ -133,14 +148,16 @@ impl WiringLayer for MempoolIOLayer {
             self.zksync_network_id,
             input.l2_contracts.0.da_validator_addr,
             self.pubdata_type,
+            input.settlement_mode.settlement_layer_for_sending_txs(),
         )?;
 
         // Create sealer.
-        let sealer = SequencerSealer::new(self.state_keeper_config);
+        let sealer = Arc::new(SequencerSealer::new(self.state_keeper_config));
 
         Ok(Output {
             state_keeper_io: io.into(),
-            conditional_sealer: sealer.into(),
+            conditional_sealer: sealer.clone(),
+            api_transaction_filter: ApiTransactionFilter(sealer),
             mempool_fetcher,
         })
     }

@@ -6,22 +6,16 @@
 
 use std::fmt;
 
+use async_trait::async_trait;
 use zksync_config::configs::chain::StateKeeperConfig;
-use zksync_types::ProtocolVersionId;
+use zksync_multivm::interface::TransactionExecutionMetrics;
+use zksync_types::{ProtocolVersionId, Transaction};
+use zksync_vm_executor::interface::TransactionFilter;
 
 use super::{criteria, SealCriterion, SealData, SealResolution, AGGREGATION_METRICS};
 
 /// Checks if an L1 batch should be sealed after executing a transaction.
 pub trait ConditionalSealer: 'static + fmt::Debug + Send + Sync {
-    /// Finds a reason why a transaction with the specified `data` is unexecutable.
-    ///
-    /// Can be used to determine whether the transaction can be executed by the sequencer.
-    fn find_unexecutable_reason(
-        &self,
-        data: &SealData,
-        protocol_version: ProtocolVersionId,
-    ) -> Option<&'static str>;
-
     /// Returns the action that should be taken by the state keeper after executing a transaction.
     #[allow(clippy::too_many_arguments)]
     fn should_seal_l1_batch(
@@ -29,6 +23,7 @@ pub trait ConditionalSealer: 'static + fmt::Debug + Send + Sync {
         l1_batch_number: u32,
         tx_count: usize,
         l1_tx_count: usize,
+        interop_roots_count: usize,
         block_data: &SealData,
         tx_data: &SealData,
         protocol_version: ProtocolVersionId,
@@ -39,6 +34,7 @@ pub trait ConditionalSealer: 'static + fmt::Debug + Send + Sync {
         &self,
         tx_count: usize,
         l1_tx_count: usize,
+        interop_roots_count: usize,
         block_data: &SealData,
         protocol_version: ProtocolVersionId,
     ) -> Vec<(&'static str, f64)>;
@@ -65,12 +61,14 @@ impl SequencerSealer {
     }
 }
 
-impl ConditionalSealer for SequencerSealer {
-    fn find_unexecutable_reason(
+#[async_trait]
+impl TransactionFilter for SequencerSealer {
+    async fn filter_transaction(
         &self,
-        data: &SealData,
-        protocol_version: ProtocolVersionId,
-    ) -> Option<&'static str> {
+        transaction: &Transaction,
+        metrics: &TransactionExecutionMetrics,
+    ) -> Result<(), String> {
+        let data = SealData::for_transaction(transaction, metrics);
         for sealer in &self.sealers {
             const TX_COUNT: usize = 1;
 
@@ -78,22 +76,27 @@ impl ConditionalSealer for SequencerSealer {
                 &self.config,
                 TX_COUNT,
                 TX_COUNT,
-                data,
-                data,
-                protocol_version,
+                TX_COUNT,
+                &data,
+                &data,
+                ProtocolVersionId::latest(),
             );
             if matches!(resolution, SealResolution::Unexecutable(_)) {
-                return Some(sealer.prom_criterion_name());
+                let err = sealer.prom_criterion_name().to_owned();
+                return Err(err);
             }
         }
-        None
+        Ok(())
     }
+}
 
+impl ConditionalSealer for SequencerSealer {
     fn should_seal_l1_batch(
         &self,
         l1_batch_number: u32,
         tx_count: usize,
         l1_tx_count: usize,
+        interop_roots_count: usize,
         block_data: &SealData,
         tx_data: &SealData,
         protocol_version: ProtocolVersionId,
@@ -110,6 +113,7 @@ impl ConditionalSealer for SequencerSealer {
                 &self.config,
                 tx_count,
                 l1_tx_count,
+                interop_roots_count,
                 block_data,
                 tx_data,
                 protocol_version,
@@ -137,6 +141,7 @@ impl ConditionalSealer for SequencerSealer {
         &self,
         tx_count: usize,
         l1_tx_count: usize,
+        interop_roots_count: usize,
         block_data: &SealData,
         protocol_version: ProtocolVersionId,
     ) -> Vec<(&'static str, f64)> {
@@ -147,6 +152,7 @@ impl ConditionalSealer for SequencerSealer {
                     &self.config,
                     tx_count,
                     l1_tx_count,
+                    interop_roots_count,
                     block_data,
                     protocol_version,
                 );
@@ -173,6 +179,7 @@ impl SequencerSealer {
     fn default_sealers(config: &StateKeeperConfig) -> Vec<Box<dyn SealCriterion>> {
         vec![
             Box::new(criteria::SlotsCriterion),
+            Box::new(criteria::InteropRootsCriterion),
             Box::new(criteria::PubDataBytesCriterion {
                 max_pubdata_per_batch: config.max_pubdata_per_batch.0,
             }),
@@ -193,19 +200,12 @@ impl SequencerSealer {
 pub struct NoopSealer;
 
 impl ConditionalSealer for NoopSealer {
-    fn find_unexecutable_reason(
-        &self,
-        _data: &SealData,
-        _protocol_version: ProtocolVersionId,
-    ) -> Option<&'static str> {
-        None
-    }
-
     fn should_seal_l1_batch(
         &self,
         _l1_batch_number: u32,
         _tx_count: usize,
         _l1_tx_count: usize,
+        _interop_roots_count: usize,
         _block_data: &SealData,
         _tx_data: &SealData,
         _protocol_version: ProtocolVersionId,
@@ -217,6 +217,7 @@ impl ConditionalSealer for NoopSealer {
         &self,
         _tx_count: usize,
         _l1_tx_count: usize,
+        _interop_roots_count: usize,
         _block_data: &SealData,
         _protocol_version: ProtocolVersionId,
     ) -> Vec<(&'static str, f64)> {

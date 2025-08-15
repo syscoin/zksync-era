@@ -8,6 +8,14 @@ these files as a starting point and modify only the necessary sections.
 **You can also see directory docker-compose-examples if you want to run external-node on your machine with recommended
 default settings.**
 
+## Important Configuration Notes
+
+### Execution Delay
+
+The execution delay (the time L1 batches must wait before being executed) is now dynamically read from the
+ValidatorTimelock contract via multicall. The system automatically queries the contract to determine the current
+execution delay setting.
+
 ## Database
 
 The Node uses two databases: PostgreSQL and RocksDB.
@@ -61,12 +69,106 @@ use, but these can be edited, e.g. to make the Node more/less restrictive.
 - `EN_REQ_ENTITIES_LIMIT` (default 10,000) controls max possible limit of entities to be requested at once. Hitting the
   limit will result in errors similar to: "Query returned more than 10000 results (...)"
 
+### Gas Cap for eth_call
+
+The external node supports configuring a gas cap for `eth_call` requests, similar to geth's `--rpc.gascap` option. This
+limits the maximum amount of gas that can be used in a single `eth_call`, preventing resource exhaustion from
+computationally expensive calls.
+
+**Configuration:**
+
+Add the following to your node configuration YAML file:
+
+```yaml
+api:
+  web3_json_rpc:
+    eth_call_gas_cap: 50000000 # 50M gas limit (optional)
+```
+
+**Gas cap behavior:**
+
+- **If not specified**: Uses the protocol version-based gas limit (recommended default)
+- **If set to 0**: No gas limit (unlimited gas, use with caution)
+- **If set to a positive value**: Caps `eth_call` gas usage to this limit
+
+The node will use `min(requested_gas, gas_cap)` when processing `eth_call` requests. This ensures that even if a client
+requests more gas than the cap allows, the call will be limited to the configured maximum.
+
+**Examples:**
+
+```yaml
+# Example 1: 10M gas cap (conservative)
+api:
+  web3_json_rpc:
+    eth_call_gas_cap: 10000000
+
+# Example 2: 100M gas cap (permissive)
+api:
+  web3_json_rpc:
+    eth_call_gas_cap: 100000000
+
+# Example 3: No gas cap (unlimited, not recommended for public nodes)
+api:
+  web3_json_rpc:
+    eth_call_gas_cap: 0
+
+# Example 4: Use protocol default (recommended)
+api:
+  web3_json_rpc:
+    # eth_call_gas_cap not specified - uses protocol default
+```
+
+**Compatibility note:** This feature provides the same functionality as geth's `--rpc.gascap` flag, ensuring
+compatibility with existing Ethereum tooling and dApps that expect gas limiting behavior.
+
 ## JSON-RPC API namespaces
 
 There are 7 total supported API namespaces: `eth`, `net`, `web3`, `debug` - standard ones; `zks` - rollup-specific one;
 `pubsub` - a.k.a. `eth_subscribe`; `en` - used by Nodes while syncing. You can configure what namespaces you want to
 enable using `EN_API_NAMESPACES` and specifying namespace names in a comma-separated list. By default, all but the
 `debug` namespace are enabled.
+
+## API caching
+
+The API server performs in-memory caching of data used for VM invocations (i.e., `eth_call`, `eth_estimateGas`,
+`eth_sendRawTransaction` methods), such as state values and bytecodes. Cache sizes have reasonable defaults, but can be
+adjusted to tradeoff between performance and RAM consumption of the node.
+
+- `EN_LATEST_VALUES_CACHE_SIZE_MB` is the size of the latest values cache, used for VM invocations against the latest
+  block. This is likely to be most utilized of the caches, potentially with hundreds / thousands of hits per VM
+  invocation.
+- `EN_FACTORY_DEPS_CACHE_SIZE_MB` is the size of the bytecodes (aka factory deps) cache.
+- `EN_INITIAL_WRITES_CACHE_SIZE_MB` is the size of the initial writes caches. Initial write info is used as a part of
+  the gas pricing model.
+
+## Optimizing RAM consumption
+
+With the default config options, a node may consume large amounts of RAM (order of 32–64 GB for larger networks). This
+consumption can be reduced with a moderate performance tradeoff as follows.
+
+For large networks in terms of the state (both the current state size and history), the main component consuming RAM is
+the Merkle tree (specifically, its RocksDB). Thus, enabling [pruning](08_pruning.md) and/or using
+[snapshot recovery](07_snapshots_recovery.md) is an effective way to reduce RAM consumption. For example, an Era mainnet
+node with [a 6-month pruning target](08_pruning.md#configuration) should consume about 10 GB RAM (vs ~60 GB for an
+archive node).
+
+For archive nodes, RAM consumption by the Merkle tree may be reduced by setting the following options:
+
+```shell
+# Disables pinning indices and filters for the Merkle tree in RAM, which can occupy a large amount of it;
+# e.g., they are ~30 GB on the Era mainnet for an archive node as of May 2025.
+EN_MERKLE_TREE_INCLUDE_INDICES_AND_FILTERS_IN_BLOCK_CACHE=true
+# **MUST** be used together with the previous option to set the RocksDB cache size. 4–8 GB provides a reasonable performance tradeoff
+# on the Era mainnet as of May 2025. On smaller networks, acceptable values may be smaller.
+EN_MERKLE_TREE_BLOCK_CACHE_SIZE_MB=4096
+# Limits the number of concurrently open files, which in turn influences OS-level page cache. A reasonable value
+# heavily depends on the amount of data in the tree.
+EN_MERKLE_TREE_MAX_OPEN_FILES=1024
+```
+
+These options can be used together with pruning / snapshot recovery as well, but their _additional_ impact on RAM
+consumption is expected to be fairly small. The options can be changed or removed at any time; they do not require a
+long-term commitment or irreversible decisions, unlike enabling pruning for a node.
 
 ## Logging and observability
 

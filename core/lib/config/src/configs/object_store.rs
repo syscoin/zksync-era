@@ -1,18 +1,14 @@
 use std::path::PathBuf;
 
-use serde::Deserialize;
 use smart_config::{DescribeConfig, DeserializeConfig};
 
-// TODO: remove `#[derive(Deserialize)]` once env-based config in EN is reworked
-
 /// Configuration for the object store
-#[derive(Debug, Clone, PartialEq, Deserialize, DescribeConfig, DeserializeConfig)]
+#[derive(Debug, Clone, PartialEq, DescribeConfig, DeserializeConfig)]
 pub struct ObjectStoreConfig {
     #[config(flatten)]
-    #[serde(flatten)]
     pub mode: ObjectStoreMode,
+    /// Max retries when working with the object store. Only transient errors (e.g., network ones) are retried.
     #[config(default_t = 5)]
-    #[serde(default = "ObjectStoreConfig::default_max_retries")]
     pub max_retries: u16,
     /// Path to local directory that will be used to mirror store objects locally. If not specified, no mirroring will be used.
     /// The directory layout is identical to [`ObjectStoreMode::FileBacked`].
@@ -25,11 +21,13 @@ pub struct ObjectStoreConfig {
     pub local_mirror_path: Option<PathBuf>,
 }
 
-impl ObjectStoreConfig {
-    const fn default_max_retries() -> u16 {
-        5
+impl Default for ObjectStoreConfig {
+    fn default() -> Self {
+        Self::for_tests()
     }
+}
 
+impl ObjectStoreConfig {
     pub fn for_tests() -> Self {
         Self {
             mode: ObjectStoreMode::FileBacked {
@@ -41,33 +39,53 @@ impl ObjectStoreConfig {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, DescribeConfig, DeserializeConfig)]
+#[derive(Debug, Clone, PartialEq, DescribeConfig, DeserializeConfig)]
 #[config(tag = "mode")]
-#[serde(tag = "mode")]
 pub enum ObjectStoreMode {
+    /// Writable GCS bucket with ambient authentication.
+    #[config(alias = "Gcs")]
     GCS {
+        /// Name or URL of the bucket.
         bucket_base_url: String,
     },
+    /// Publicly available GCS bucket.
+    #[config(alias = "GcsAnonymousReadOnly")]
     GCSAnonymousReadOnly {
+        /// Name or URL of the bucket.
         bucket_base_url: String,
     },
+    /// GCS bucket with credential file authentication.
+    #[config(alias = "GcsWithCredentialFile")]
     GCSWithCredentialFile {
+        /// Name or URL of the bucket.
         bucket_base_url: String,
-        gcs_credential_file_path: String,
+        /// Path to the credentials file.
+        gcs_credential_file_path: PathBuf,
     },
+    /// Publicly available S3-compatible bucket.
     S3AnonymousReadOnly {
+        /// Name or URL of the bucket.
         bucket_base_url: String,
+        /// Allows overriding AWS S3 API endpoint, e.g. to use another S3-compatible store provider.
         endpoint: Option<String>,
+        /// Allows specifying bucket region (inferred from the env by default).
         region: Option<String>,
     },
+    /// S3-compatible bucket with credential file authentication.
     S3WithCredentialFile {
+        /// Name or URL of the bucket.
         bucket_base_url: String,
-        s3_credential_file_path: String,
+        /// Path to the credentials file.
+        s3_credential_file_path: PathBuf,
+        /// Allows overriding AWS S3 API endpoint, e.g. to use another S3-compatible store provider.
         endpoint: Option<String>,
+        /// Allows specifying bucket region (inferred from the env by default).
         region: Option<String>,
     },
+    /// Stores files in a local filesystem. Mostly useful for local testing.
     #[config(default)]
     FileBacked {
+        /// Path to the root directory for storage.
         file_backed_base_path: PathBuf,
     },
 }
@@ -75,7 +93,7 @@ pub enum ObjectStoreMode {
 #[cfg(test)]
 mod tests {
     use smart_config::{
-        testing::{test, test_complete},
+        testing::{test, test_complete, Tester},
         Environment, Yaml,
     };
 
@@ -85,7 +103,7 @@ mod tests {
         ObjectStoreConfig {
             mode: ObjectStoreMode::GCSWithCredentialFile {
                 bucket_base_url: bucket_base_url.to_owned(),
-                gcs_credential_file_path: "/path/to/credentials.json".to_owned(),
+                gcs_credential_file_path: "/path/to/credentials.json".into(),
             },
             max_retries: 5,
             local_mirror_path: Some("/var/cache".into()),
@@ -168,6 +186,24 @@ mod tests {
             config.mode,
             ObjectStoreMode::FileBacked {
                 file_backed_base_path: "./chains/era/artifacts/".into(),
+            }
+        );
+    }
+
+    #[test]
+    fn public_bucket_from_yaml_with_enum_coercion() {
+        let yaml = r#"
+          gcs_anonymous_read_only:
+            bucket_base_url: /public_base_url
+          max_retries: 3
+        "#;
+        let yaml = Yaml::new("test.yml", serde_yaml::from_str(yaml).unwrap()).unwrap();
+        let config: ObjectStoreConfig = Tester::default().coerce_serde_enums().test(yaml).unwrap();
+        assert_eq!(config.max_retries, 3);
+        assert_eq!(
+            config.mode,
+            ObjectStoreMode::GCSAnonymousReadOnly {
+                bucket_base_url: "/public_base_url".to_owned(),
             }
         );
     }

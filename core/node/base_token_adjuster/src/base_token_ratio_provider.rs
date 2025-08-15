@@ -44,7 +44,7 @@ impl DBBaseTokenRatioProvider {
     }
 
     pub async fn run(&self, mut stop_receiver: watch::Receiver<bool>) -> anyhow::Result<()> {
-        let mut timer = tokio::time::interval(self.config.price_cache_update_interval_ms);
+        let mut timer = tokio::time::interval(self.config.price_cache_update_interval);
 
         while !*stop_receiver.borrow_and_update() {
             tokio::select! {
@@ -71,16 +71,13 @@ impl DBBaseTokenRatioProvider {
             .await;
 
         let ratio = match latest_storage_ratio {
-            Ok(Some(latest_storage_price)) => BaseTokenConversionRatio {
-                numerator: latest_storage_price.numerator,
-                denominator: latest_storage_price.denominator,
-            },
+            Ok(Some(latest_storage_price)) => latest_storage_price.ratio,
             Ok(None) => {
                 // TODO(PE-136): Insert initial ratio from genesis.
                 // Though the DB should be populated very soon after the server starts, it is possible
                 // to have no ratios in the DB right after genesis. Having initial ratios in the DB
                 // from the genesis stage will eliminate this possibility.
-                tracing::warn!("No latest price found in the database. Using default ratio.");
+                tracing::info!("No latest price found in the database. Using default ratio. This is normal on non-gateway chains.");
                 BaseTokenConversionRatio::default()
             }
             Err(err) => anyhow::bail!("Failed to get latest base token ratio: {:?}", err),

@@ -9,7 +9,6 @@ jobs:
         fail-fast: false
         matrix:
           compressor-mode: ["fflonk", "plonk"]
-          gateway-mode: ["legacy", "prover-cluster"]
     env:
       RUNNER_COMPOSE_FILE: "docker-compose-gpu-runner-cuda-12-0.yml"
       YQ_VERSION: "4.45.1"
@@ -20,34 +19,19 @@ jobs:
           submodules: "recursive"
           fetch-depth: 0
 
-      - name: Setup environment
-        run: |
-          echo ZKSYNC_HOME=$(pwd) >> $GITHUB_ENV
-          echo $(pwd)/bin >> $GITHUB_PATH
-          echo IN_DOCKER=1 >> .env
-          echo "SCCACHE_GCS_BUCKET=matterlabs-infra-sccache-storage" >> .env
-          echo "SCCACHE_GCS_SERVICE_ACCOUNT=gha-ci-runners@matterlabs-infra.iam.gserviceaccount.com" >> .env
-          echo "SCCACHE_GCS_RW_MODE=READ_WRITE" >> .env
-          echo "RUSTC_WRAPPER=sccache" >> .env
-          
-          mkdir -p prover_logs_${{matrix.compressor-mode}}_${{matrix.gateway-mode}}
-
-      - name: Start services
-        run: |
-          run_retried docker-compose -f ${RUNNER_COMPOSE_FILE} pull
-          docker-compose -f ${RUNNER_COMPOSE_FILE} --profile runner up -d --wait
-          ci_run sccache --start-server
-          ci_run git config --global --add safe.directory "*"
+      - name: Setup Environment
+        uses: ./.github/actions/setup-env
+        with:
+          runner-compose-file: ${{ env.RUNNER_COMPOSE_FILE }}
 
       - name: Install yq
         run: sudo wget https://github.com/mikefarah/yq/releases/download/v$YQ_VERSION/yq_linux_amd64 -O /usr/local/bin/yq && sudo chmod a+x /usr/local/bin/yq
 
       - name: Init
         run: |
+          mkdir -p prover_logs_${{matrix.compressor-mode}}
+          ci_run git config --global --add safe.directory "*"
           ci_run chmod -R +x ./bin
-          
-          ci_run ./zkstack_cli/zkstackup/install -g --path ./zkstack_cli/zkstackup/zkstackup || true
-          ci_run zkstackup -g --local
           
           ci_run zkstack chain create \
             --chain-name proving_chain \
@@ -70,13 +54,6 @@ jobs:
           echo "Using Web3 HTTP URL: $WEB3_HTTP_URL"
           echo "URL=$WEB3_HTTP_URL" >> $GITHUB_ENV
 
-      - name: Switch gateway API mode
-        working-directory: ./chains/proving_chain/configs
-        if: matrix.gateway-mode == 'prover-cluster'
-        run: |
-          sudo yq -e -i '.prover_gateway.api_mode = "PROVER_CLUSTER"' general.yaml
-          yq '.prover_gateway.api_mode' < general.yaml
-
       - name: Change block_commit_deadline_ms to 60000 to submit txs to batch 1
         working-directory: ./chains/proving_chain/configs
         run: |
@@ -90,7 +67,7 @@ jobs:
 
       - name: Run server
         run: |
-          ci_run zkstack server --uring --chain=proving_chain --components=api,tree,eth,state_keeper,commitment_generator,proof_data_handler,vm_runner_protective_reads,vm_runner_bwip &>prover_logs_${{matrix.compressor-mode}}_${{matrix.gateway-mode}}/server.log &
+          ci_run zkstack server --uring --chain=proving_chain --components=api,tree,eth,state_keeper,commitment_generator,proof_data_handler,vm_runner_protective_reads,vm_runner_bwip &>prover_logs_${{matrix.compressor-mode}}/server.log &
 
       - name: Waiting for web3_json_rpc to become ready
         env:
@@ -126,10 +103,10 @@ jobs:
 
       - name: Run prover gateway
         run: |
-          ci_run zkstack prover run --component=gateway --docker=false &>prover_logs_${{matrix.compressor-mode}}_${{matrix.gateway-mode}}/gateway.log &
+          ci_run zkstack prover run --component=gateway --docker=false &>prover_logs_${{matrix.compressor-mode}}/gateway.log &
       - name: Run Prover Job Monitor
         run: |
-          ci_run zkstack prover run --component=prover-job-monitor --docker=false &>prover_logs_${{matrix.compressor-mode}}_${{matrix.gateway-mode}}/prover-job-monitor.log &
+          ci_run zkstack prover run --component=prover-job-monitor --docker=false &>prover_logs_${{matrix.compressor-mode}}/prover-job-monitor.log &
       - name: Wait for batch to be passed through prover gateway
         env:
           DATABASE_URL: postgres://postgres:notsecurepassword@localhost:5432/zksync_prover_localhost_proving_chain
@@ -141,10 +118,10 @@ jobs:
           ci_run ./bin/prover_checkers/batch_availability_checker
       - name: Run Witness Generator
         run: |
-          ci_run zkstack prover run --component=witness-generator --round=all-rounds --docker=false &>prover_logs_${{matrix.compressor-mode}}_${{matrix.gateway-mode}}/witness-generator.log &
+          ci_run zkstack prover run --component=witness-generator --round=all-rounds --docker=false &>prover_logs_${{matrix.compressor-mode}}/witness-generator.log &
       - name: Run Circuit Prover
         run: |
-          ci_run zkstack prover run --component=circuit-prover -l=23 -h=3 --docker=false &>prover_logs_${{matrix.compressor-mode}}_${{matrix.gateway-mode}}/circuit_prover.log &
+          ci_run zkstack prover run --component=circuit-prover --threads=32 --docker=false &>prover_logs_${{matrix.compressor-mode}}/circuit_prover.log &
       - name: Wait for prover jobs to finish
         env:
           DATABASE_URL: postgres://postgres:notsecurepassword@localhost:5432/zksync_prover_localhost_proving_chain
@@ -158,7 +135,7 @@ jobs:
       - name: Kill prover & start compressor
         run: |
           sudo ./bin/prover_checkers/kill_prover
-          ci_run zkstack prover run --component=compressor --docker=false --mode=${{matrix.compressor-mode}} &>prover_logs_${{matrix.compressor-mode}}_${{matrix.gateway-mode}}/compressor.log &
+          ci_run zkstack prover run --component=compressor --docker=false --mode=${{matrix.compressor-mode}} &>prover_logs_${{matrix.compressor-mode}}/compressor.log &
 
       - name: Wait for batch to be executed on L1
         env:
@@ -174,8 +151,8 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: always()
         with:
-          name: prover_logs_${{matrix.compressor-mode}}_${{matrix.gateway-mode}}
-          path: prover_logs_${{matrix.compressor-mode}}_${{matrix.gateway-mode}}
+          name: prover_logs_${{matrix.compressor-mode}}
+          path: prover_logs_${{matrix.compressor-mode}}
 
       - name: Show sccache logs
         if: always()

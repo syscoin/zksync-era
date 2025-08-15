@@ -74,7 +74,22 @@ pub(super) const MSG_OBSERVABILITY_HELP: &str = "Enable Grafana";
 pub(super) const MSG_OBSERVABILITY_PROMPT: &str = "Do you want to setup observability? (Grafana)";
 pub(super) const MSG_DEPLOY_ECOSYSTEM_PROMPT: &str =
     "Do you want to deploy ecosystem contracts? (Not needed if you already have an existing one)";
+pub(super) const MSG_RPC_URL_PROMPT: &str = "What is the RPC URL of the network?";
+pub(super) const MSG_RPC_URL_PROMPT_PROVING_NETWORK: &str =
+    "What is the RPC URL for the proving network(defaults to local L2)?";
 pub(super) const MSG_L1_RPC_URL_PROMPT: &str = "What is the RPC URL of the L1 network?";
+pub(super) const MSG_FERMAH_ADDRESS_PROMPT: &str =
+    "What is Fermah's Proving Network address (allows acknowledging/submitting proofs for Fermah)?";
+pub(super) const MSG_LAGRANGE_ADDRESS_PROMPT: &str =
+    "What is Lagrange's Proving Network address (allows acknowledging/submitting proofs for Lagrange)?";
+pub(super) const MSG_USDC_ADDRESS_PROMPT: &str = "What is the address of the USDC contract?";
+pub(super) const MSG_PROOF_MANAGER_OWNER_ADDRESS_PROMPT: &str = "What is the address of the ProofManager owner(what address is allowed to submit Proof Requests?)?";
+pub(super) const MSG_PROXY_OWNER_ADDRESS_PROMPT: &str =
+    "What is the address of the Proxy owner(who will be able to upgrade the contract)?";
+pub(super) const MSG_TOP_UP_SERVER_WALLETS_PROMPT: &str =
+    "Do you want to top up server wallets(on L2, by 1 ETH)?";
+pub(super) const MSG_TOP_UP_NETWORK_WALLETS_PROMPT: &str =
+    "Do you want to top up proving network wallets(on L2, by 1 ETH)?";
 pub(super) const MSG_DEPLOY_PAYMASTER_PROMPT: &str = "Do you want to deploy Paymaster contract?";
 pub(super) const MSG_VALIDIUM_TYPE_PROMPT: &str = "Select the Validium type";
 pub(super) const MSG_DEPLOY_ERC20_PROMPT: &str = "Do you want to deploy some test ERC20s?";
@@ -100,13 +115,25 @@ pub(super) const MSG_PREPARING_CONFIG_SPINNER: &str = "Preparing config files...
 pub(super) const MSG_DEPLOYING_ERC20_SPINNER: &str = "Deploying ERC20 contracts...";
 pub(super) const MSG_DEPLOYING_ECOSYSTEM_CONTRACTS_SPINNER: &str =
     "Deploying ecosystem contracts...";
+pub(super) const MSG_DEPLOYING_PROVING_NETWORKS_SPINNER: &str =
+    "Deploying proving networks contracts...";
 pub(super) const MSG_REGISTERING_CHAIN_SPINNER: &str = "Registering chain...";
 pub(super) const MSG_ACCEPTING_ADMIN_SPINNER: &str = "Accepting admin...";
 pub(super) const MSG_DA_PAIR_REGISTRATION_SPINNER: &str = "Registering DA pair...";
 pub(super) const MSG_UPDATING_TOKEN_MULTIPLIER_SETTER_SPINNER: &str =
     "Updating token multiplier setter...";
+pub(super) const MSG_UPDATING_DA_VALIDATOR_PAIR_SPINNER: &str = "Updating da validator pair...";
 pub(super) const MSG_TOKEN_MULTIPLIER_SETTER_UPDATED_TO: &str =
     "Token multiplier setter updated to";
+pub(super) const MSG_DA_VALIDATOR_PAIR_UPDATED_TO: &str = "DA validator pair updated to";
+pub(super) const MSG_GOT_SETTLEMENT_LAYER_ADDRESS_FROM_GW: &str =
+    "Got the settlement layer address from gateway";
+pub(super) const MSG_USE_GATEWAY_HELP: &str = "Use the Gateway to set the DA validator pair";
+pub(super) const MSG_GATEWAY_URL_MUST_BE_PRESET: &str =
+    "Gateway RPC URL must be provided when using the `--gateway` flag";
+pub(super) const MSG_UPDATING_PUBDATA_PRICING_MODE_SPINNER: &str =
+    "Updating pubdata pricing mode...";
+pub(super) const MSG_PUBDATA_PRICING_MODE_UPDATED_TO: &str = "Pubdata pricing mode updated to";
 pub(super) const MSG_RECREATE_ROCKS_DB_ERRROR: &str = "Failed to create rocks db path";
 pub(super) const MSG_ERA_OBSERVABILITY_ALREADY_SETUP: &str = "Era observability already setup";
 pub(super) const MSG_DOWNLOADING_ERA_OBSERVABILITY_SPINNER: &str =
@@ -350,6 +377,8 @@ pub(super) const MSG_PRIVATE_RPC_FAILED_TO_DROP_DATABASE_ERR: &str =
     "Failed to drop private proxy database";
 
 /// Explorer related messages
+pub(super) const MSG_EXPLORER_PRIVIDIUM_HELP: &str =
+    "Enable Prividium mode for this Block Explorer";
 pub(super) const MSG_EXPLORER_FAILED_TO_DROP_DATABASE_ERR: &str =
     "Failed to drop explorer database";
 pub(super) const MSG_EXPLORER_FAILED_TO_RUN_DOCKER_SERVICES_ERR: &str =
@@ -376,6 +405,15 @@ pub(super) fn msg_explorer_starting_on(host: &str, port: u16) -> String {
 pub(super) fn msg_explorer_chain_not_initialized(chain: &str) -> String {
     format!("Chain {chain} is not initialized for explorer: run `zkstack explorer init --chain {chain}` first")
 }
+
+pub(super) const MSG_EXPLORER_PRIVIDIUM_MODE_PROMPT: &str =
+    "Do you want to enable Prividium mode for this Block Explorer?";
+
+pub(super) const MSG_EXPLORER_PRIVIDIUM_SESSION_MAX_AGE_PROMPT: &str =
+    "What session max age configuration do you want to use for Prividium mode?";
+
+pub(super) const MSG_EXPLORER_PRIVIDIUM_SESSION_SAME_SITE_PROMPT: &str =
+    "What session same site configuration do you want to use for Prividium mode?";
 
 /// Forge utils related messages
 pub(super) fn msg_wallet_private_key_not_set(wallet_owner: WalletOwner) -> String {
@@ -473,6 +511,8 @@ pub(super) const MSG_BELLMAN_CUDA_ORIGIN_SELECT: &str =
 pub(super) const MSG_BELLMAN_CUDA_SELECTION_CLONE: &str = "Clone for me (recommended)";
 pub(super) const MSG_BELLMAN_CUDA_SELECTION_PATH: &str = "I have the code already";
 pub(super) const MSG_SETUP_KEYS_PROMPT: &str = "Do you want to setup keys?";
+pub(super) const MSG_WVG_MODE_PROMPT: &str =
+    "Do you want simple WVG picking jobs mode or advanced one?";
 
 pub(super) fn msg_bucket_created(bucket_name: &str) -> String {
     format!("Bucket created successfully with url: gs://{bucket_name}")
@@ -593,11 +633,11 @@ pub(super) const MSG_CONSENSUS_REGISTRY_ADDRESS_NOT_CONFIGURED: &str =
 pub(super) const MSG_CONSENSUS_REGISTRY_POLL_ERROR: &str = "failed querying L2 node";
 pub(super) const MSG_CONSENSUS_REGISTRY_WAIT_COMPONENT: &str = "main node HTTP RPC";
 
-pub(super) fn msg_setting_validator_committee_failed(
-    got: &validator::Committee,
-    want: &validator::Committee,
+pub(super) fn msg_setting_validator_schedule_failed(
+    got: &validator::Schedule,
+    want: &validator::Schedule,
 ) -> String {
-    format!("setting validator committee failed: got {got:?}, want {want:?}")
+    format!("setting validator schedule failed: got {got:?}, want {want:?}")
 }
 
 pub(super) fn msg_wait_consensus_registry_started_polling(addr: Address, url: &Url) -> String {
@@ -613,7 +653,6 @@ pub(super) const MSG_AVAIL_CLIENT_TYPE_PROMPT: &str = "Avail client type";
 pub(super) const MSG_AVAIL_API_TIMEOUT_MS: &str = "Avail API timeout in milliseconds";
 pub(super) const MSG_AVAIL_API_NODE_URL_PROMPT: &str = "Avail API node URL";
 pub(super) const MSG_AVAIL_APP_ID_PROMPT: &str = "Avail app id";
-pub(super) const MSG_AVAIL_FINALITY_STATE_PROMPT: &str = "Avail finality state";
 pub(super) const MSG_AVAIL_GAS_RELAY_API_URL_PROMPT: &str = "Gas relay API URL";
 pub(super) const MSG_AVAIL_GAS_RELAY_MAX_RETRIES_PROMPT: &str = "Gas relay max retries";
 pub(super) const MSG_AVAIL_BRIDGE_API_URL_PROMPT: &str = "Attestation bridge API URL";

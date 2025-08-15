@@ -17,6 +17,7 @@ pub use crate::transaction_request::{
 };
 use crate::{
     debug_flat_call::{DebugCallFlat, ResultDebugCallFlat},
+    eth_sender::EthTxFinalityStatus,
     protocol_version::L1VerifierConfig,
     server_notification::{GatewayMigrationNotification, GatewayMigrationState},
     tee_types::TeeType,
@@ -33,8 +34,12 @@ pub enum BlockNumber {
     Committed,
     /// Last block that was finalized on L1.
     Finalized,
+    /// Last block that was fast finalized on L1.
+    FastFinalized,
     /// Latest sealed block
     Latest,
+    /// Precommitted
+    Precommitted,
     /// Last block that was committed on L1
     L1Committed,
     /// Earliest block (genesis)
@@ -64,6 +69,8 @@ impl Serialize for BlockNumber {
             BlockNumber::L1Committed => serializer.serialize_str("l1_committed"),
             BlockNumber::Earliest => serializer.serialize_str("earliest"),
             BlockNumber::Pending => serializer.serialize_str("pending"),
+            BlockNumber::FastFinalized => serializer.serialize_str("fast_finalized"),
+            BlockNumber::Precommitted => serializer.serialize_str("precommitted"),
         }
     }
 }
@@ -86,9 +93,11 @@ impl<'de> Deserialize<'de> for BlockNumber {
                     "latest" => BlockNumber::Latest,
                     "l1_committed" => BlockNumber::L1Committed,
                     "earliest" => BlockNumber::Earliest,
-                    // For zksync safe is finalized, but for compatibility with ethereum it's required to introduce it.
-                    "safe" => BlockNumber::Finalized,
+                    // For zksync safe is l1 precommitted. Real chances of revert are very low.
+                    "safe" => BlockNumber::Precommitted,
                     "pending" => BlockNumber::Pending,
+                    "fast_finalized" => BlockNumber::FastFinalized,
+                    "precommitted" => BlockNumber::Precommitted,
                     num => {
                         let number =
                             U64::deserialize(de::value::BorrowedStrDeserializer::new(num))?;
@@ -187,6 +196,55 @@ pub enum TransactionId {
 impl From<H256> for TransactionId {
     fn from(hash: H256) -> Self {
         TransactionId::Hash(hash)
+    }
+}
+
+/// Interop modes are used to specify the target Merkle root for interop log proofs
+#[derive(Copy, Clone, Debug, PartialEq, Display)]
+pub enum InteropMode {
+    // Proof-based interop on Gateway, meaning the Merkle proof hashes to Gateway's MessageRoot
+    ProofBasedGateway,
+    // Proof-based interop on L1, meaning the Merkle proof hashes to L1's MessageRoot
+    // ProofBasedL1, // todo: v30
+}
+
+impl Serialize for InteropMode {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        match *self {
+            InteropMode::ProofBasedGateway => serializer.serialize_str("proof_based_gw"),
+        }
+    }
+}
+
+impl<'de> Deserialize<'de> for InteropMode {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        struct V;
+        impl<'de> serde::de::Visitor<'de> for V {
+            type Value = InteropMode;
+            fn expecting(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+                f.write_str("One of the supported aliases")
+            }
+            fn visit_str<E: serde::de::Error>(self, value: &str) -> Result<Self::Value, E> {
+                let result = match value {
+                    "proof_based_gw" => InteropMode::ProofBasedGateway,
+                    _ => {
+                        return Err(E::custom(format!(
+                            "Unsupported InteropMode variant: {}",
+                            value
+                        )));
+                    }
+                };
+
+                Ok(result)
+            }
+        }
+        deserializer.deserialize_str(V)
     }
 }
 
@@ -620,11 +678,13 @@ pub struct Transaction {
     pub l1_batch_tx_index: Option<U64>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub enum TransactionStatus {
     Pending,
     Included,
+    FastFinalized,
+    Precommitted,
     Verified,
     Failed,
 }
@@ -641,6 +701,7 @@ pub struct TransactionDetails {
     pub eth_commit_tx_hash: Option<H256>,
     pub eth_prove_tx_hash: Option<H256>,
     pub eth_execute_tx_hash: Option<H256>,
+    pub eth_precommit_tx_hash: Option<H256>,
 }
 
 #[derive(Debug, Clone)]
@@ -847,11 +908,12 @@ impl Default for TracerConfig {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub enum BlockStatus {
     Sealed,
     Verified,
+    FastFinalized,
 }
 
 /// Result tracers need to have a nested result field for compatibility. So we have two different
@@ -914,13 +976,20 @@ pub struct BlockDetailsBase {
     pub status: BlockStatus,
     pub commit_tx_hash: Option<H256>,
     pub committed_at: Option<DateTime<Utc>>,
+    pub commit_tx_finality: Option<EthTxFinalityStatus>,
     pub commit_chain_id: Option<SLChainId>,
     pub prove_tx_hash: Option<H256>,
+    pub prove_tx_finality: Option<EthTxFinalityStatus>,
     pub proven_at: Option<DateTime<Utc>>,
     pub prove_chain_id: Option<SLChainId>,
     pub execute_tx_hash: Option<H256>,
+    pub execute_tx_finality: Option<EthTxFinalityStatus>,
     pub executed_at: Option<DateTime<Utc>>,
     pub execute_chain_id: Option<SLChainId>,
+    pub precommit_tx_hash: Option<H256>,
+    pub precommit_tx_finality: Option<EthTxFinalityStatus>,
+    pub precommitted_at: Option<DateTime<Utc>>,
+    pub precommit_chain_id: Option<SLChainId>,
     pub l1_gas_price: u64,
     pub l2_fair_gas_price: u64,
     // Cost of publishing one byte (in wei).
@@ -1053,6 +1122,7 @@ pub struct EcosystemContracts {
     // the location of the contracts we call it `l1_wrapped_base_token_store`
     pub l1_wrapped_base_token_store: Option<Address>,
     pub server_notifier_addr: Option<Address>,
+    pub message_root_proxy_addr: Option<Address>,
 }
 
 #[cfg(test)]
@@ -1100,6 +1170,8 @@ mod tests {
         assert_eq!(format!("{}", block_number), "Latest");
         let block_number = BlockNumber::L1Committed;
         assert_eq!(format!("{}", block_number), "L1Committed");
+        let block_number = BlockNumber::FastFinalized;
+        assert_eq!(format!("{}", block_number), "FastFinalized");
         let block_number = BlockNumber::Earliest;
         assert_eq!(format!("{}", block_number), "Earliest");
         let block_number = BlockNumber::Pending;

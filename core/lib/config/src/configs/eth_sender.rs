@@ -3,14 +3,14 @@ use std::time::Duration;
 use anyhow::Context as _;
 use serde::{Deserialize, Serialize};
 use smart_config::{
-    de::{Optional, Serde, WellKnown},
+    de::{Serde, WellKnown},
     metadata::TimeUnit,
     DescribeConfig, DeserializeConfig,
 };
 use zksync_basic_types::{pubdata_da::PubdataSendingMode, H256};
 use zksync_crypto_primitives::K256PrivateKey;
 
-use crate::EthWatchConfig;
+use crate::{utils::Fallback, EthWatchConfig};
 
 /// Configuration for the Ethereum related components.
 #[derive(Debug, Clone, PartialEq, DescribeConfig, DeserializeConfig)]
@@ -31,20 +31,18 @@ impl EthConfig {
     pub fn for_tests() -> Self {
         Self {
             sender: SenderConfig {
-                wait_confirmations: Some(10),
+                wait_confirmations: None,
                 tx_poll_period: Duration::from_secs(1),
                 aggregate_tx_poll_period: Duration::from_secs(1),
                 max_txs_in_flight: 30,
                 proof_sending_mode: ProofSendingMode::SkipEveryProof,
                 max_aggregated_tx_gas: 4000000,
-                max_eth_tx_data_size: 6000000,
                 max_aggregated_blocks_to_commit: 10,
                 max_aggregated_blocks_to_execute: 10,
                 aggregated_block_commit_deadline: Duration::from_secs(1),
                 aggregated_block_prove_deadline: Duration::from_secs(10),
                 aggregated_block_execute_deadline: Duration::from_secs(10),
                 timestamp_criteria_max_allowed_lag: 30,
-                l1_batch_min_age_before_execute_seconds: None,
                 max_acceptable_priority_fee_in_gwei: 100000000000,
                 pubdata_sending_mode: PubdataSendingMode::Calldata,
                 tx_aggregation_paused: false,
@@ -53,6 +51,9 @@ impl EthConfig {
                 is_verifier_pre_fflonk: true,
                 gas_limit_mode: GasLimitMode::Maximum,
                 max_acceptable_base_fee_in_wei: 100000000000,
+                time_in_mempool_multiplier_cap: None,
+                precommit_params: None,
+                force_use_validator_timelock: false,
             },
             gas_adjuster: GasAdjusterConfig {
                 default_priority_fee_per_gas: 1000000000,
@@ -70,6 +71,7 @@ impl EthConfig {
             },
             watcher: EthWatchConfig {
                 confirmations_for_eth_event: None,
+                event_expiration_blocks: 50000,
                 eth_node_poll_interval: Duration::ZERO,
             },
         }
@@ -118,10 +120,10 @@ pub struct SenderConfig {
     /// If not specified L1 transaction will be considered finalized once its block is finalized.
     pub wait_confirmations: Option<u64>,
     /// Node polling period in seconds.
-    #[config(default_t = Duration::from_secs(1), with = TimeUnit::Seconds)]
+    #[config(default_t = Duration::from_secs(1), with = Fallback(TimeUnit::Seconds))]
     pub tx_poll_period: Duration,
     /// Aggregate txs polling period in seconds.
-    #[config(default_t = Duration::from_secs(1), with = TimeUnit::Seconds)]
+    #[config(default_t = Duration::from_secs(1), with = Fallback(TimeUnit::Seconds))]
     pub aggregate_tx_poll_period: Duration,
     /// The maximum number of unconfirmed Ethereum transactions.
     #[config(default_t = 30)]
@@ -130,27 +132,20 @@ pub struct SenderConfig {
     pub proof_sending_mode: ProofSendingMode,
     #[config(default_t = 4_000_000)]
     pub max_aggregated_tx_gas: u64,
-    #[config(default_t = 6_000_000)]
-    pub max_eth_tx_data_size: usize,
     #[config(default_t = 10)]
     pub max_aggregated_blocks_to_commit: u32,
     #[config(default_t = 10)]
     pub max_aggregated_blocks_to_execute: u32,
-    #[config(default_t = 5 * TimeUnit::Minutes, with = TimeUnit::Seconds)]
+    #[config(default_t = 5 * TimeUnit::Minutes, with = Fallback(TimeUnit::Seconds))]
     pub aggregated_block_commit_deadline: Duration,
-    #[config(default_t = 5 * TimeUnit::Minutes, with = TimeUnit::Seconds)]
+    #[config(default_t = 5 * TimeUnit::Minutes, with = Fallback(TimeUnit::Seconds))]
     pub aggregated_block_prove_deadline: Duration,
-    #[config(default_t = 5 * TimeUnit::Minutes, with = TimeUnit::Seconds)]
+    #[config(default_t = 5 * TimeUnit::Minutes, with = Fallback(TimeUnit::Seconds))]
     pub aggregated_block_execute_deadline: Duration,
     #[config(default_t = 30)]
     pub timestamp_criteria_max_allowed_lag: usize,
 
-    /// L1 batches will only be executed on L1 contract after they are at least this number of seconds old.
-    /// Note that this number must be slightly higher than the one set on the contract,
-    /// because the contract uses `block.timestamp` which lags behind the clock time.
-    #[config(with = Optional(TimeUnit::Seconds))]
-    pub l1_batch_min_age_before_execute_seconds: Option<Duration>,
-    // Max acceptable fee for sending tx it acts as a safeguard to prevent sending tx with very high fees.
+    /// Max acceptable fee for sending tx it acts as a safeguard to prevent sending tx with very high fees.
     #[config(default_t = 100_000_000_000)]
     pub max_acceptable_priority_fee_in_gwei: u64,
 
@@ -173,6 +168,31 @@ pub struct SenderConfig {
     /// Max acceptable base fee the sender is allowed to use to send L1 txs.
     #[config(default_t = u64::MAX)]
     pub max_acceptable_base_fee_in_wei: u64,
+    /// Cap for `b ^ time_in_mempool` used for price calculations.
+    #[config(default)]
+    pub time_in_mempool_multiplier_cap: Option<u32>,
+    /// Parameters for precommit operation.
+    #[config(nest)]
+    pub precommit_params: Option<PrecommitParams>,
+    /// Allow to force change the validator timelock address.
+    #[config(default)]
+    pub force_use_validator_timelock: bool,
+}
+
+/// We send precommit if l2_blocks_to_aggregate OR deadline_sec passed since last precommit or beginning of batch.
+#[derive(Debug, Clone, PartialEq, DescribeConfig, DeserializeConfig)]
+pub struct PrecommitParams {
+    pub l2_blocks_to_aggregate: u32,
+    pub deadline: Duration,
+}
+
+impl PrecommitParams {
+    pub fn fast_precommit() -> Self {
+        Self {
+            l2_blocks_to_aggregate: 100000,
+            deadline: Duration::from_millis(1),
+        }
+    }
 }
 
 impl SenderConfig {
@@ -190,15 +210,7 @@ impl SenderConfig {
             .transpose()
     }
 
-    // Don't load blobs private key, if it's not required
-    #[deprecated]
-    pub fn private_key_blobs(&self) -> Option<H256> {
-        std::env::var("ETH_SENDER_SENDER_OPERATOR_BLOBS_PRIVATE_KEY")
-            .ok()
-            .map(|pk| pk.parse().unwrap())
-    }
-
-    pub const fn default_time_in_mempool_in_l1_blocks_cap() -> u32 {
+    const fn default_time_in_mempool_in_l1_blocks_cap() -> u32 {
         let blocks_per_hour = 3600 / 12;
         // we cap it at 6h to not allow nearly infinite values when a tx is stuck for a long time
         // 1,001 ^ 1800 ~= 6, so by default we cap exponential price formula at roughly median * 6
@@ -235,7 +247,7 @@ pub struct GasAdjusterConfig {
     #[config(default)]
     pub internal_enforced_pubdata_price: Option<u64>,
     /// Node polling period in seconds
-    #[config(default_t = 1 * TimeUnit::Minutes, with = TimeUnit::Seconds)]
+    #[config(default_t = 1 * TimeUnit::Minutes, with = Fallback(TimeUnit::Seconds))]
     pub poll_period: Duration,
     /// Max number of l1 gas price that is allowed to be used.
     #[config(default_t = u64::MAX)]
@@ -267,7 +279,6 @@ mod tests {
                 aggregated_block_prove_deadline: Duration::from_secs(3_000),
                 aggregated_block_execute_deadline: Duration::from_secs(4_000),
                 max_aggregated_tx_gas: 4_000_000,
-                max_eth_tx_data_size: 120_000,
                 timestamp_criteria_max_allowed_lag: 30,
                 max_aggregated_blocks_to_commit: 3,
                 max_aggregated_blocks_to_execute: 4,
@@ -276,7 +287,6 @@ mod tests {
                 aggregate_tx_poll_period: Duration::from_secs(3),
                 max_txs_in_flight: 3,
                 proof_sending_mode: ProofSendingMode::SkipEveryProof,
-                l1_batch_min_age_before_execute_seconds: Some(Duration::from_secs(1000)),
                 max_acceptable_priority_fee_in_gwei: 100_000_000_000,
                 pubdata_sending_mode: PubdataSendingMode::Calldata,
                 tx_aggregation_only_prove_and_execute: false,
@@ -285,6 +295,12 @@ mod tests {
                 is_verifier_pre_fflonk: false,
                 gas_limit_mode: GasLimitMode::Calculated,
                 max_acceptable_base_fee_in_wei: 100_000_000_000,
+                time_in_mempool_multiplier_cap: Some(10),
+                precommit_params: Some(PrecommitParams {
+                    l2_blocks_to_aggregate: 1,
+                    deadline: Duration::from_secs(1),
+                }),
+                force_use_validator_timelock: false,
             },
             gas_adjuster: GasAdjusterConfig {
                 default_priority_fee_per_gas: 20000000000,
@@ -303,6 +319,7 @@ mod tests {
             watcher: EthWatchConfig {
                 confirmations_for_eth_event: Some(0),
                 eth_node_poll_interval: Duration::from_millis(300),
+                event_expiration_blocks: 60000,
             },
         }
     }
@@ -312,6 +329,7 @@ mod tests {
         let env = r#"
             ETH_WATCH_CONFIRMATIONS_FOR_ETH_EVENT="0"
             ETH_WATCH_ETH_NODE_POLL_INTERVAL="300"
+            ETH_WATCH_EVENT_EXPIRATION_BLOCKS="60000"
             ETH_SENDER_SENDER_WAIT_CONFIRMATIONS="1"
             ETH_SENDER_SENDER_TX_POLL_PERIOD="3"
             ETH_SENDER_SENDER_AGGREGATE_TX_POLL_PERIOD="3"
@@ -339,12 +357,14 @@ mod tests {
             ETH_SENDER_SENDER_MAX_AGGREGATED_TX_GAS="4000000"
             ETH_SENDER_SENDER_MAX_ETH_TX_DATA_SIZE="120000"
             ETH_SENDER_SENDER_TIME_IN_MEMPOOL_IN_L1_BLOCKS_CAP="2000"
-            ETH_SENDER_SENDER_L1_BATCH_MIN_AGE_BEFORE_EXECUTE_SECONDS="1000"
             ETH_SENDER_SENDER_MAX_ACCEPTABLE_PRIORITY_FEE_IN_GWEI="100000000000"
             ETH_SENDER_SENDER_PUBDATA_SENDING_MODE="Calldata"
             ETH_SENDER_SENDER_IS_VERIFIER_PRE_FFLONK=false
             ETH_SENDER_SENDER_GAS_LIMIT_MODE=Calculated
             ETH_SENDER_SENDER_MAX_ACCEPTABLE_BASE_FEE_IN_WEI=100000000000
+            ETH_SENDER_SENDER_PRECOMMIT_PARAMS_L2_BLOCKS_TO_AGGREGATE="1"
+            ETH_SENDER_SENDER_PRECOMMIT_PARAMS_DEADLINE="1 sec"
+            ETH_SENDER_SENDER_TIME_IN_MEMPOOL_MULTIPLIER_CAP="10"
         "#;
         let env = Environment::from_dotenv("test.env", env)
             .unwrap()
@@ -361,7 +381,6 @@ mod tests {
             wait_confirmations: 1
             tx_poll_period: 3
             aggregate_tx_poll_period: 3
-            l1_batch_min_age_before_execute_seconds: 1000
             max_txs_in_flight: 3
             proof_sending_mode: SKIP_EVERY_PROOF
             max_aggregated_tx_gas: 4000000
@@ -380,6 +399,11 @@ mod tests {
             is_verifier_pre_fflonk: false
             gas_limit_mode: Calculated
             max_acceptable_base_fee_in_wei: 100000000000
+            time_in_mempool_multiplier_cap: 10
+            force_use_validator_timelock: false
+            precommit_params:
+              l2_blocks_to_aggregate: 1
+              deadline: 1 sec
           gas_adjuster:
             default_priority_fee_per_gas: 20000000000
             max_base_fee_samples: 10000
@@ -397,6 +421,64 @@ mod tests {
           watcher:
             confirmations_for_eth_event: 0
             eth_node_poll_interval: 300
+            event_expiration_blocks: 60000
+        "#;
+        let yaml = Yaml::new("test.yml", serde_yaml::from_str(yaml).unwrap()).unwrap();
+        let config: EthConfig = Tester::default()
+            .coerce_variant_names()
+            .test_complete(yaml)
+            .unwrap();
+        assert_eq!(config, expected_config());
+    }
+
+    #[test]
+    fn parsing_from_idiomatic_yaml() {
+        let yaml = r#"
+          sender:
+            wait_confirmations: 1
+            tx_poll_period: 3 seconds
+            aggregate_tx_poll_period: 3s
+            max_txs_in_flight: 3
+            proof_sending_mode: SKIP_EVERY_PROOF
+            max_aggregated_tx_gas: 4000000
+            max_eth_tx_data_size: 120000
+            max_aggregated_blocks_to_commit: 3
+            max_aggregated_blocks_to_execute: 4
+            aggregated_block_commit_deadline: 30sec
+            aggregated_block_prove_deadline: 3000s
+            aggregated_block_execute_deadline: 4000s
+            timestamp_criteria_max_allowed_lag: 30
+            max_acceptable_priority_fee_in_gwei: 100000000000
+            pubdata_sending_mode: CALLDATA
+            tx_aggregation_paused: false
+            tx_aggregation_only_prove_and_execute: false
+            time_in_mempool_in_l1_blocks_cap: 2000
+            is_verifier_pre_fflonk: false
+            gas_limit_mode: Calculated
+            max_acceptable_base_fee_in_wei: 100000000000
+            time_in_mempool_multiplier_cap: 10
+            force_use_validator_timelock: false
+            precommit_params:
+              l2_blocks_to_aggregate: 1
+              deadline: 1 sec
+          gas_adjuster:
+            default_priority_fee_per_gas: 20000000000
+            max_base_fee_samples: 10000
+            max_l1_gas_price: 100000000
+            pricing_formula_parameter_a: 1.5
+            pricing_formula_parameter_b: 1.0005
+            internal_l1_pricing_multiplier: 0.8
+            poll_period: 15s
+            num_samples_for_blob_base_fee_estimate: 10
+            settlement_mode: "SettlesToL1"
+            internal_pubdata_pricing_multiplier: 1.0
+            internal_enforced_l1_gas_price: 10000000
+            internal_enforced_pubdata_price: 5000000
+            max_blob_base_fee: 1000
+          watcher:
+            confirmations_for_eth_event: 0
+            eth_node_poll_interval: 300ms
+            event_expiration_blocks: 60000
         "#;
         let yaml = Yaml::new("test.yml", serde_yaml::from_str(yaml).unwrap()).unwrap();
         let config: EthConfig = Tester::default()

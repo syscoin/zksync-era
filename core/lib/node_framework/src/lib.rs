@@ -10,10 +10,16 @@
 //!   and shutting down.
 //! - [`ZkStackServiceBuilder`](service::ZkStackServiceBuilder) - a builder for the service.
 
+mod metrics;
 pub mod resource;
 pub mod service;
 pub mod task;
 pub mod wiring_layer;
+
+mod sealed {
+    /// Sealed trait marker. Intentionally not re-exported publicly.
+    pub trait Sealed {}
+}
 
 /// Derive macro for the `FromContext` trait.
 pub use zksync_node_framework_derive::FromContext;

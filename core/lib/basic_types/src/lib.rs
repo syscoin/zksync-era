@@ -21,6 +21,7 @@ pub use ethabi::{
     },
 };
 use serde::{de, Deserialize, Deserializer, Serialize};
+use vise::_reexports::encoding::{EncodeLabelValue, LabelValueEncoder};
 
 pub use self::{
     conversions::{
@@ -28,6 +29,7 @@ pub use self::{
         u256_to_h256,
     },
     errors::{OrStopped, StopContext},
+    stop_guard::{StopGuard, StopToken},
 };
 
 #[macro_use]
@@ -44,6 +46,7 @@ pub mod pubdata_da;
 pub mod secrets;
 pub mod serde_wrappers;
 pub mod settlement;
+mod stop_guard;
 pub mod tee_types;
 pub mod url;
 pub mod vm;
@@ -128,6 +131,12 @@ impl TryFrom<U256> for AccountTreeId {
 /// ChainId in the ZKsync network.
 #[derive(Copy, Clone, Debug, Serialize, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct L2ChainId(u64);
+
+impl EncodeLabelValue for L2ChainId {
+    fn encode(&self, encoder: &mut LabelValueEncoder) -> Result<(), std::fmt::Error> {
+        EncodeLabelValue::encode(&self.0.to_string(), encoder)
+    }
+}
 
 impl<'de> Deserialize<'de> for L2ChainId {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
@@ -249,8 +258,7 @@ impl std::fmt::Display for L1BatchId {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "L1BatchId
-        (chain_id: {}, batch_number: {})",
+            "L1BatchId(chain_id: {}, batch_number: {})",
             self.chain_id.as_u64(),
             self.batch_number.0
         )

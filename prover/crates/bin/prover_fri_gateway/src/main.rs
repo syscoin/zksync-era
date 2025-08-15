@@ -2,32 +2,26 @@ use std::time::Duration;
 
 use anyhow::Context as _;
 use clap::Parser;
-use client::{proof_gen_data_fetcher::ProofGenDataFetcher, proof_submitter::ProofSubmitter};
 use proof_data_manager::ProofDataManager;
 use tokio::sync::{oneshot, watch};
-use traits::PeriodicApi as _;
 use zksync_config::{
-    configs::{fri_prover_gateway::ApiMode, DatabaseSecrets, GeneralConfig},
+    configs::{GeneralConfig, PostgresSecrets},
     full_config_schema,
     sources::ConfigFilePaths,
-    ConfigRepositoryExt,
 };
 use zksync_object_store::ObjectStoreFactory;
 use zksync_prover_dal::{ConnectionPool, Prover};
 use zksync_task_management::ManagedTasks;
-use zksync_vlog::prometheus::PrometheusExporterConfig;
 
-mod client;
 mod error;
 mod metrics;
 mod proof_data_manager;
 mod server;
-mod traits;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let opt = Cli::parse();
-    let schema = full_config_schema(false);
+    let schema = full_config_schema();
     let config_file_paths = ConfigFilePaths {
         general: opt.config_path,
         secrets: opt.secrets_path,
@@ -37,9 +31,9 @@ async fn main() -> anyhow::Result<()> {
 
     let _observability_guard = config_sources.observability()?.install()?;
 
-    let repo = config_sources.build_repository(&schema);
+    let mut repo = config_sources.build_repository(&schema);
     let general_config: GeneralConfig = repo.parse()?;
-    let database_secrets: DatabaseSecrets = repo.parse()?;
+    let database_secrets: PostgresSecrets = repo.parse()?;
 
     let config = general_config
         .prover_gateway
@@ -70,51 +64,24 @@ async fn main() -> anyhow::Result<()> {
     })
     .context("Error setting Ctrl+C handler")?;
 
-    tracing::info!("Starting Fri Prover Gateway in mode {:?}", config.api_mode);
+    let prometheus_exporter_config = general_config
+        .prometheus_config
+        .build_exporter_config(config.prometheus_listener_port)
+        .context("Failed to build Prometheus exporter configuration")?;
+    tracing::info!("Using Prometheus exporter with {prometheus_exporter_config:?}");
 
-    let tasks = match &config.api_mode {
-        ApiMode::Legacy => {
-            let proof_submitter = ProofSubmitter::new(
-                store_factory.create_store().await?,
-                config.api_url.clone(),
-                pool.clone(),
-            );
-            let proof_gen_data_fetcher = ProofGenDataFetcher::new(
-                store_factory.create_store().await?,
-                config.api_url.clone(),
-                pool,
-            );
+    let port = config
+        .port
+        .expect("Port must be specified in ProverCluster mode");
 
-            vec![
-                tokio::spawn(
-                    PrometheusExporterConfig::pull(config.prometheus_listener_port)
-                        .run(stop_receiver.clone()),
-                ),
-                tokio::spawn(
-                    proof_gen_data_fetcher
-                        .run(config.api_poll_duration_secs, stop_receiver.clone()),
-                ),
-                tokio::spawn(proof_submitter.run(config.api_poll_duration_secs, stop_receiver)),
-            ]
-        }
-        ApiMode::ProverCluster => {
-            let port = config
-                .port
-                .expect("Port must be specified in ProverCluster mode");
+    let processor = ProofDataManager::new(store_factory.create_store().await?, pool);
 
-            let processor = ProofDataManager::new(store_factory.create_store().await?, pool);
+    let api = server::Api::new(processor.clone(), port);
 
-            let api = server::Api::new(processor.clone(), port);
-
-            vec![
-                tokio::spawn(
-                    PrometheusExporterConfig::pull(config.prometheus_listener_port)
-                        .run(stop_receiver.clone()),
-                ),
-                tokio::spawn(api.run(stop_receiver)),
-            ]
-        }
-    };
+    let tasks = vec![
+        tokio::spawn(prometheus_exporter_config.run(stop_receiver.clone())),
+        tokio::spawn(api.run(stop_receiver)),
+    ];
 
     let mut tasks = ManagedTasks::new(tasks);
     tokio::select! {

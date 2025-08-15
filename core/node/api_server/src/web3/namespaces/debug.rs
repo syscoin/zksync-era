@@ -11,6 +11,7 @@ use zksync_types::{
     l2::L2Tx,
     transaction_request::CallRequest,
     web3,
+    web3::Bytes,
     zk_evm_types::FarCallOpcode,
     H256, U256,
 };
@@ -18,7 +19,7 @@ use zksync_web3_decl::error::Web3Error;
 
 use crate::{
     execution_sandbox::SandboxAction,
-    web3::{backend_jsonrpsee::MethodTracer, state::RpcState},
+    web3::{backend_jsonrpsee::MethodTracer, namespaces::validate_gas_cap, state::RpcState},
 };
 
 #[derive(Debug, Clone)]
@@ -277,8 +278,24 @@ impl DebugNamespace {
                 .last_sealed_l2_block
                 .diff_with_block_args(&block_args),
         );
+
+        // Validate user-provided gas against the cap
+        validate_gas_cap(
+            &request,
+            block_id,
+            &block_args,
+            &mut connection,
+            self.state.api_config.eth_call_gas_cap,
+            self.current_method(),
+        )
+        .await?;
+
         if request.gas.is_none() {
-            request.gas = Some(block_args.default_eth_call_gas(&mut connection).await?);
+            request.gas = Some(
+                block_args
+                    .default_eth_call_gas(&mut connection, self.state.api_config.eth_call_gas_cap)
+                    .await?,
+            );
         }
 
         let fee_input = if block_args.resolves_to_latest_sealed_l2_block() {
@@ -355,5 +372,43 @@ impl DebugNamespace {
             ..Default::default()
         };
         Ok(Self::map_call(call, meta, options))
+    }
+
+    pub async fn debug_get_raw_transaction_impl(
+        &self,
+        hash: H256,
+    ) -> Result<Option<Bytes>, Web3Error> {
+        let mut connection = self.state.acquire_connection().await?;
+        let raw_tx_bytes = connection
+            .transactions_web3_dal()
+            .get_raw_transaction_bytes(hash)
+            .await
+            .map_err(DalError::generalize)?;
+        Ok(raw_tx_bytes.map(Bytes::from))
+    }
+
+    pub async fn debug_get_raw_transactions_impl(
+        &self,
+        block_id: BlockId,
+    ) -> Result<Vec<Bytes>, Web3Error> {
+        self.current_method().set_block_id(block_id);
+        if matches!(block_id, BlockId::Number(BlockNumber::Pending)) {
+            // See `EthNamespace::get_block_impl()` for an explanation why this check is needed.
+            return Ok(vec![]);
+        }
+
+        let mut connection = self.state.acquire_connection().await?;
+        self.state
+            .start_info
+            .ensure_not_pruned(block_id, &mut connection)
+            .await?;
+
+        let block_number = self.state.resolve_block(&mut connection, block_id).await?;
+        let raw_txs_bytes = connection
+            .transactions_web3_dal()
+            .get_l2_block_raw_transactions_bytes(block_number)
+            .await
+            .map_err(DalError::generalize)?;
+        Ok(raw_txs_bytes.into_iter().map(Bytes::from).collect())
     }
 }

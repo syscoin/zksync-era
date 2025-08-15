@@ -2,19 +2,18 @@ use std::{path::PathBuf, sync::Arc};
 
 use anyhow::Context;
 use zksync_dal::node::{MasterPool, PoolResource, ReplicaPool};
-use zksync_health_check::{node::AppHealthCheckResource, ReactiveHealthCheck};
+use zksync_health_check::AppHealthCheck;
 use zksync_node_framework::{
     service::ShutdownHook, task::TaskKind, FromContext, IntoContext, StopReceiver, Task, TaskId,
     WiringError, WiringLayer,
 };
 use zksync_state::{AsyncCatchupTask, RocksdbStorageOptions};
 use zksync_storage::RocksDB;
+use zksync_types::try_stoppable;
 use zksync_vm_executor::whitelist::{DeploymentTxFilter, SharedAllowList};
 
-use super::resources::{
-    BatchExecutorResource, ConditionalSealerResource, OutputHandlerResource, StateKeeperIOResource,
-};
-use crate::{AsyncRocksdbCache, ZkSyncStateKeeper};
+use super::resources::{BatchExecutorResource, OutputHandlerResource, StateKeeperIOResource};
+use crate::{seal_criteria::ConditionalSealer, AsyncRocksdbCache, StateKeeperBuilder};
 
 /// Wiring layer for the state keeper.
 #[derive(Debug)]
@@ -25,15 +24,15 @@ pub struct StateKeeperLayer {
 
 #[derive(Debug, FromContext)]
 pub struct Input {
-    pub state_keeper_io: StateKeeperIOResource,
-    pub batch_executor: BatchExecutorResource,
-    pub output_handler: OutputHandlerResource,
-    pub conditional_sealer: ConditionalSealerResource,
-    pub master_pool: PoolResource<MasterPool>,
-    pub replica_pool: PoolResource<ReplicaPool>,
-    pub shared_allow_list: Option<SharedAllowList>,
+    state_keeper_io: StateKeeperIOResource,
+    batch_executor: BatchExecutorResource,
+    output_handler: OutputHandlerResource,
+    conditional_sealer: Arc<dyn ConditionalSealer>,
+    master_pool: PoolResource<MasterPool>,
+    replica_pool: PoolResource<ReplicaPool>,
+    shared_allow_list: Option<SharedAllowList>,
     #[context(default)]
-    pub app_health: AppHealthCheckResource,
+    app_health: Arc<AppHealthCheck>,
 }
 
 #[derive(Debug, IntoContext)]
@@ -79,7 +78,7 @@ impl WiringLayer for StateKeeperLayer {
             .0
             .take()
             .context("HandleStateKeeperOutput was provided but taken by another task")?;
-        let sealer = input.conditional_sealer.0;
+        let sealer = input.conditional_sealer;
         let master_pool = input.master_pool;
 
         let (storage_factory, mut rocksdb_catchup) = AsyncRocksdbCache::new(
@@ -91,7 +90,7 @@ impl WiringLayer for StateKeeperLayer {
         let recovery_pool = input.replica_pool.get_custom(10).await?;
         rocksdb_catchup = rocksdb_catchup.with_recovery_pool(recovery_pool);
 
-        let state_keeper = ZkSyncStateKeeper::new(
+        let state_keeper_builder = StateKeeperBuilder::new(
             io,
             batch_executor_base,
             output_handler,
@@ -100,13 +99,13 @@ impl WiringLayer for StateKeeperLayer {
             input.shared_allow_list.map(DeploymentTxFilter::new),
         );
 
-        let state_keeper = StateKeeperTask { state_keeper };
-
         input
             .app_health
-            .0
-            .insert_component(state_keeper.health_check())
+            .insert_component(state_keeper_builder.health_check())
             .map_err(WiringError::internal)?;
+        let state_keeper = StateKeeperTask {
+            state_keeper_builder,
+        };
 
         let rocksdb_termination_hook = ShutdownHook::new("rocksdb_terminaton", async {
             // Wait for all the instances of RocksDB to be destroyed.
@@ -124,14 +123,7 @@ impl WiringLayer for StateKeeperLayer {
 
 #[derive(Debug)]
 pub struct StateKeeperTask {
-    state_keeper: ZkSyncStateKeeper,
-}
-
-impl StateKeeperTask {
-    /// Returns the health check for state keeper.
-    pub fn health_check(&self) -> ReactiveHealthCheck {
-        self.state_keeper.health_check()
-    }
+    state_keeper_builder: StateKeeperBuilder,
 }
 
 #[async_trait::async_trait]
@@ -141,7 +133,8 @@ impl Task for StateKeeperTask {
     }
 
     async fn run(self: Box<Self>, stop_receiver: StopReceiver) -> anyhow::Result<()> {
-        self.state_keeper.run(stop_receiver.0).await
+        let state_keeper = try_stoppable!(self.state_keeper_builder.build(&stop_receiver.0).await);
+        state_keeper.run(stop_receiver.0).await
     }
 }
 

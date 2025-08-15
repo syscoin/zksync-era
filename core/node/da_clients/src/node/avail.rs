@@ -1,8 +1,9 @@
 use zksync_config::{configs::da_client::avail::AvailSecrets, AvailConfig};
-use zksync_da_client::{node::DAClientResource, DataAvailabilityClient};
+use zksync_da_client::DataAvailabilityClient;
+use zksync_eth_client::web3_decl::node::SettlementModeResource;
 use zksync_node_framework::{
     wiring_layer::{WiringError, WiringLayer},
-    IntoContext,
+    FromContext,
 };
 
 use crate::avail::AvailClient;
@@ -13,32 +14,29 @@ pub struct AvailWiringLayer {
     secrets: AvailSecrets,
 }
 
+#[derive(Debug, FromContext)]
+pub struct Input {
+    settlement_mode: SettlementModeResource,
+}
+
 impl AvailWiringLayer {
     pub fn new(config: AvailConfig, secrets: AvailSecrets) -> Self {
         Self { config, secrets }
     }
 }
 
-#[derive(Debug, IntoContext)]
-pub struct Output {
-    pub client: DAClientResource,
-}
-
 #[async_trait::async_trait]
 impl WiringLayer for AvailWiringLayer {
-    type Input = ();
-    type Output = Output;
+    type Input = Input;
+    type Output = Box<dyn DataAvailabilityClient>;
 
     fn layer_name(&self) -> &'static str {
         "avail_client_layer"
     }
 
-    async fn wire(self, _input: Self::Input) -> Result<Self::Output, WiringError> {
-        let client: Box<dyn DataAvailabilityClient> =
-            Box::new(AvailClient::new(self.config, self.secrets).await?);
-
-        Ok(Self::Output {
-            client: DAClientResource(client),
-        })
+    async fn wire(self, input: Self::Input) -> Result<Self::Output, WiringError> {
+        let sl_chain_id = input.settlement_mode.settlement_layer().chain_id();
+        let client = AvailClient::new(self.config, self.secrets, sl_chain_id).await?;
+        Ok(Box::new(client))
     }
 }

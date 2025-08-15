@@ -37,6 +37,7 @@ jobs:
               - 'docker/prover*/**'
               - '.github/workflows/build-prover-template.yml'
               - '.github/workflows/ci-prover-reusable.yml'
+              - '.github/workflows/actions/**'
               - 'docker-compose-runner-nightly.yml'
               - '!**/*.md'
               - '!**/*.MD'
@@ -50,9 +51,11 @@ jobs:
               - '.github/workflows/build-contract-verifier-template.yml'
               - '.github/workflows/ci-core-reusable.yml'
               - '.github/workflows/ci-core-lint-reusable.yml'
+              - '.github/workflows/actions/**'
               - './core/Cargo.toml'
               - './core/Cargo.lock'
               - 'zkstack_cli/**'
+              - 'private-rpc/**'
               - '!**/*.md'
               - '!**/*.MD'
               - 'docker-compose.yml'
@@ -60,8 +63,10 @@ jobs:
               - '**/*.md'
               - '**/*.MD'
               - '.github/workflows/ci-docs-reusable.yml'
+              - '.github/workflows/actions/**'
             all:
               - '.github/workflows/ci.yml'
+              - '.github/workflows/actions/**'
               - 'bin/**'
               - 'etc/**'
               - 'contracts/**'
@@ -101,13 +106,6 @@ jobs:
     name: CI for Docs
     uses: ./.github/workflows/ci-docs-reusable.yml
 
-  # What needs to be ran for both core and prover
-  ci-for-common:
-    needs: changed_files
-    if: ${{ (needs.changed_files.outputs.prover == 'true' || needs.changed_files.outputs.core == 'true' || needs.changed_files.outputs.all == 'true') && !contains(github.head_ref, 'release-please--branches') }}
-    name: CI for Common Components (prover or core)
-    uses: ./.github/workflows/ci-common-reusable.yml
-
   build-core-images:
     name: Build core images
     needs: changed_files
@@ -119,17 +117,6 @@ jobs:
     secrets:
       DOCKERHUB_USER: ${{ secrets.DOCKERHUB_USER }}
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
-
-  build-tee-prover-images:
-    name: Build TEE Prover images
-    needs: changed_files
-    if: ${{ (needs.changed_files.outputs.core == 'true' || needs.changed_files.outputs.all == 'true') && !contains(github.head_ref, 'release-please--branches') }}
-    uses: ./.github/workflows/build-tee-prover-template.yml
-    with:
-      image_tag_suffix: ${{ needs.setup.outputs.image_tag_suffix }}
-      action: "build"
-    secrets:
-      ATTIC_TOKEN: ${{ secrets.ATTIC_TOKEN }}
 
   build-contract-verifier:
     name: Build contract verifier
@@ -164,7 +151,6 @@ jobs:
     needs:
       [
         ci-for-core-lint,
-        ci-for-common,
         ci-for-core,
         ci-for-prover,
         ci-for-docs,

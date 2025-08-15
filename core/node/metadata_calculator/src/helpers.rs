@@ -11,13 +11,14 @@ use anyhow::Context as _;
 use async_trait::async_trait;
 use itertools::Itertools;
 use once_cell::sync::OnceCell;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 #[cfg(test)]
 use tokio::sync::mpsc;
 use tokio::sync::watch;
 use zksync_config::configs::database::MerkleTreeMode;
 use zksync_dal::{Connection, Core, CoreDal};
 use zksync_health_check::{CheckHealth, Health, HealthStatus, ReactiveHealthCheck};
+use zksync_instrument::alloc::AllocationGuard;
 use zksync_merkle_tree::{
     domain::{TreeMetadata, ZkSyncTree, ZkSyncTreeReader},
     recovery::{MerkleTreeRecovery, PersistenceThreadHandle},
@@ -27,9 +28,10 @@ use zksync_merkle_tree::{
     TreeEntryWithProof, TreeInstruction,
 };
 use zksync_shared_metrics::tree::{LoadChangesStage, TreeUpdateStage, METRICS};
+use zksync_shared_resources::tree::MerkleTreeInfo;
 use zksync_storage::{RocksDB, RocksDBOptions, StalledWritesRetries, WeakRocksDB};
 use zksync_types::{
-    block::{L1BatchStatistics, L1BatchTreeData},
+    block::{CommonBlockStatistics, L1BatchTreeData},
     writes::TreeWrite,
     AccountTreeId, L1BatchNumber, StorageKey, H256,
 };
@@ -38,16 +40,6 @@ use super::{
     pruning::PruningHandles, MerkleTreeReaderConfig, MetadataCalculatorConfig,
     MetadataCalculatorRecoveryConfig,
 };
-
-/// General information about the Merkle tree.
-#[derive(Debug, Serialize, Deserialize)]
-pub struct MerkleTreeInfo {
-    pub mode: MerkleTreeMode,
-    pub root_hash: H256,
-    pub next_l1_batch_number: L1BatchNumber,
-    pub min_l1_batch_number: Option<L1BatchNumber>,
-    pub leaf_count: u64,
-}
 
 /// Health details for a Merkle tree.
 #[derive(Debug, Serialize)]
@@ -301,7 +293,10 @@ impl AsyncTree {
         let batch_number = batch.stats.number;
 
         let mut tree = self.inner.take().context(Self::INCONSISTENT_MSG)?;
+        let span = tracing::Span::current();
         let (tree, metadata) = tokio::task::spawn_blocking(move || {
+            let _entered_span = span.entered();
+            let _guard = AllocationGuard::for_operation("tree#process_batch");
             let metadata = tree.process_l1_batch(&batch.storage_logs)?;
             anyhow::Ok((tree, metadata))
         })
@@ -317,8 +312,11 @@ impl AsyncTree {
     /// Returned errors are unrecoverable; the tree must not be used after an error is returned.
     pub async fn save(&mut self) -> anyhow::Result<()> {
         let mut tree = self.inner.take().context(Self::INCONSISTENT_MSG)?;
+        let span = tracing::Span::current();
         self.inner = Some(
             tokio::task::spawn_blocking(|| {
+                let _entered_span = span.entered();
+                let _guard = AllocationGuard::for_operation("tree#save");
                 tree.save()?;
                 anyhow::Ok(tree)
             })
@@ -677,7 +675,7 @@ impl Delayer {
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub(crate) struct L1BatchWithLogs {
-    pub stats: L1BatchStatistics,
+    pub stats: CommonBlockStatistics,
     pub storage_logs: Vec<TreeInstruction>,
     mode: MerkleTreeMode,
 }

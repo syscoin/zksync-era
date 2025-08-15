@@ -1,4 +1,6 @@
 [submodule "contracts"]
 path = contracts
-url = https://github.com/syscoin/era-contracts.git
-branch = release-v28
+url = https://github.com/matter-labs/era-contracts.git
+[submodule "proof-manager-contracts"]
+path = proof-manager-contracts
+url = https://github.com/matter-labs/proof-manager-contracts.git
