@@ -1,13 +1,12 @@
-# Bitcoin Data Availability client
+# Bitcoin Data Availability client (Gateway node)
 
 This section explains how to enable the Bitcoin DA client for zkSync nodes. The implementation leverages the
-[Syscoin PoDA service](hhttps://docs.syscoin.org/docs/tech/poda/) to store data off chain. PoDA is not a standard Bitcoin node: it runs
+[Syscoin PoDA service](https://docs.syscoin.org/docs/tech/poda/) to store data off chain. PoDA is not a standard Bitcoin node: it runs
 on a Syscoin node that is secured by Bitcoin miners through merged mining.
 
-## Enabling the client
+## Enabling the client (on Gateway / settlement layer)
 
-Set `DA_CLIENT=Bitcoin` in your environment or configuration file. For the External Node the variables should be
-prefixed with `EN_` (e.g. `EN_DA_CLIENT`).
+Set `DA_CLIENT=Bitcoin` in your environment or configuration file. This is intended for the Gateway (Validium) node. For the External Node the variables should be prefixed with `EN_` (e.g. `EN_DA_CLIENT`).
 
 ### Required variables
 
@@ -26,7 +25,17 @@ export DA_SECRETS_RPC_USER="user"
 export DA_SECRETS_RPC_PASSWORD="password"
 ```
 
-For instructions on running the PoDA service and Syscoin node see the
+External Node variant (env variables are prefixed with `EN_`):
+
+```bash
+export EN_DA_CLIENT=Bitcoin
+export EN_BITCOIN_API_NODE_URL="http://localhost:8369"
+export EN_BITCOIN_PODA_URL="https://poda.syscoin.org"
+export EN_DA_SECRETS_RPC_USER="user"
+export EN_DA_SECRETS_RPC_PASSWORD="password"
+```
+
+Note: zkSYS (child rollup) does not use the Bitcoin DA client; keep it in rollup mode. For instructions on running the PoDA service and Syscoin node see the
 [Syscoin GitHub repository](https://github.com/syscoin/syscoin).
 
 ### `smart_config` example

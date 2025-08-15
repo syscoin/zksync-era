@@ -14,7 +14,7 @@ This tutorial shows how to deploy Gateway contracts, create the first chain usin
    ```bash
    zkstack chain create \
        --chain-name gateway \
-       --chain-id 580 \
+       --chain-id 57000 \
        --l1-batch-commit-data-generator-mode validium
    ```
 
@@ -38,7 +38,7 @@ This tutorial shows how to deploy Gateway contracts, create the first chain usin
    # Create the chain
    zkstack chain create \
        --chain-name zksys \
-       --chain-id 581 \
+       --chain-id 57001 \
        --l1-batch-commit-data-generator-mode rollup
 
    # Initialize it against Gateway (uses addresses generated in `chains/gateway/configs/gateway.yaml`)
@@ -57,9 +57,38 @@ This tutorial shows how to deploy Gateway contracts, create the first chain usin
    state_keeper:
      max_pubdata_per_batch: 750_000
    ```
-   You may also want to edit the zkSYS configuration as well to update max_pubdata_per_batch.
 
-   Add the [Bitcoin DA smart_config](./bitcoin-da-client.md#smart_config-example) snippet for the DA client.
+   Add the DA client configuration for Syscoin PoDA:
+
+   ```yaml
+   da_client:
+     client: Bitcoin
+     api_node_url: http://localhost:8369      # Syscoin NEVM RPC/API node
+     poda_url: https://poda.syscoin.org       # PoDA endpoint (or your own)
+   ```
+
+   Then set the required secrets (credentials and Gateway RPC URL) in `chains/gateway/configs/secrets.yaml`:
+
+   ```yaml
+   l1:
+     gateway_rpc_url: http://127.0.0.1:4050/   # Gateway chain RPC (your Gateway node)
+
+   da_client:
+     rpc_user: YOUR_SYSCOIN_RPC_USER
+     rpc_password: YOUR_SYSCOIN_RPC_PASSWORD
+   ```
+
+   Or, as environment variables (alternative to editing secrets):
+
+   ```bash
+   # Gateway server (settlement layer)
+   export L1_GATEWAY_WEB3_URL="http://127.0.0.1:4050/"
+
+   # External node for Gateway
+   export EN_GATEWAY_URL="http://127.0.0.1:4050/"
+   ```
+
+   For more details, see the [Bitcoin DA smart_config](./bitcoin-da-client.md#smart_config-example).
 
 7. **Run the nodes**
 
