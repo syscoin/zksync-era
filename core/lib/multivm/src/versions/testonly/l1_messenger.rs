@@ -15,7 +15,7 @@ use crate::{
         InspectExecutionMode, TxExecutionMode, VmInterfaceExt,
     },
     pubdata_builders::FullPubdataBuilder,
-    vm_latest::constants::ZK_SYNC_BYTES_PER_BLOB,
+    //vm_latest::constants::ZK_SYNC_BYTES_PER_BLOB,
 };
 
 const L2_DA_VALIDATOR_OUTPUT_HASH_KEY: usize = 5;
@@ -43,13 +43,13 @@ fn compose_header_for_l1_commit_rollup(input: PubdataInput) -> Vec<u8> {
     full_header.extend(uncompressed_state_diffs_hash);
 
     let pubdata_builder = FullPubdataBuilder::new(Address::zero());
-    let mut full_pubdata =
+    let full_pubdata =
         pubdata_builder.settlement_layer_pubdata(&input, ProtocolVersionId::latest());
     let full_pubdata_hash = keccak256(&full_pubdata);
     full_header.extend(full_pubdata_hash);
 
-    // Now, we need to calculate the linear hashes of the blobs.
-    // Firstly, let's pad the pubdata to the size of the blob.
+    // SYSCOIN: In Bitcoin DA mode, we do not publish EIP-4844 blobs.
+    /*
     if full_pubdata.len() % ZK_SYNC_BYTES_PER_BLOB != 0 {
         full_pubdata.resize(
             full_pubdata.len() + ZK_SYNC_BYTES_PER_BLOB
@@ -64,7 +64,7 @@ fn compose_header_for_l1_commit_rollup(input: PubdataInput) -> Vec<u8> {
         .for_each(|chunk| {
             full_header.extend(keccak256(chunk));
         });
-
+    */
     full_header
 }
 

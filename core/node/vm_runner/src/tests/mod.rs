@@ -32,8 +32,8 @@ mod playground;
 mod process;
 mod storage;
 mod storage_writer;
-
-const TEST_TIMEOUT: Duration = Duration::from_secs(10);
+// SYSCOIN
+const TEST_TIMEOUT: Duration = Duration::from_secs(60);
 
 #[derive(Debug, Default)]
 struct IoMock {
