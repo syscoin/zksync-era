@@ -88,7 +88,6 @@ impl GasAdjusterFeesOracle {
         if !bitcoin_mode {
             self.assert_fee_is_not_zero(blob_base_fee_per_gas, "blob");
         }
-        let blob_base_fee_per_gas = Some(blob_base_fee_per_gas);
 
         let mut priority_fee_per_gas = self.gas_adjuster.get_blob_tx_priority_fee();
         if let Some(previous_sent_tx) = previous_sent_tx {

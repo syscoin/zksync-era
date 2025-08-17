@@ -6,6 +6,7 @@ use std::{
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 use bitcoin_da_client::{SyscoinClient, MAX_BLOB_SIZE};
+use chrono::{DateTime, Utc};
 use hex::FromHex;
 use serde::{Deserialize, Serialize};
 use tokio::sync::OnceCell;
@@ -184,6 +185,7 @@ impl DataAvailabilityClient for BitcoinDAClient {
     async fn ensure_finality(
         &self,
         dispatch_request_id: String,
+        _: DateTime<Utc>,
     ) -> Result<Option<types::FinalityResponse>, DAError> {
         match self.client.check_blob_finality(&dispatch_request_id).await {
             Ok(true) => {
