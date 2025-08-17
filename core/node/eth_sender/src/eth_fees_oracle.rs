@@ -81,7 +81,7 @@ impl GasAdjusterFeesOracle {
         let mut blob_base_fee_per_gas = self
             .gas_adjuster
             .get_blob_tx_blob_base_fee(capped_time_in_mempool_in_l1_blocks);
-        // SYSCOIN: Skip blob fee assertion when using Bitcoin DA.
+        // SYSCOIN: Skip blob fee checks when using Bitcoin DA.
         let bitcoin_mode = std::env::var("DA_CLIENT")
             .map(|v| v.eq_ignore_ascii_case("bitcoin"))
             .unwrap_or(false);
@@ -91,14 +91,18 @@ impl GasAdjusterFeesOracle {
 
         let mut priority_fee_per_gas = self.gas_adjuster.get_blob_tx_priority_fee();
         if let Some(previous_sent_tx) = previous_sent_tx {
-            let blob_result = self.verify_base_fee_not_too_low_on_resend(
-                previous_sent_tx.id,
-                previous_sent_tx.blob_base_fee_per_gas.unwrap_or(0),
-                blob_base_fee_per_gas,
-                self.gas_adjuster.get_next_block_minimal_blob_base_fee(),
-                MIN_PRICE_BUMP_MULTIPLIER,
-                "blob_base_fee_per_gas",
-            );
+            let blob_result = if bitcoin_mode {
+                Ok(())
+            } else {
+                self.verify_base_fee_not_too_low_on_resend(
+                    previous_sent_tx.id,
+                    previous_sent_tx.blob_base_fee_per_gas.unwrap_or(0),
+                    blob_base_fee_per_gas,
+                    self.gas_adjuster.get_next_block_minimal_blob_base_fee(),
+                    MIN_PRICE_BUMP_MULTIPLIER,
+                    "blob_base_fee_per_gas",
+                )
+            };
 
             let base_result = self.verify_base_fee_not_too_low_on_resend(
                 previous_sent_tx.id,
@@ -118,8 +122,10 @@ impl GasAdjusterFeesOracle {
                         previous_sent_tx.base_fee_per_gas * MIN_PRICE_BUMP_MULTIPLIER_U64;
                 }
                 (Err(_), Ok(_)) => {
-                    blob_base_fee_per_gas = previous_sent_tx.blob_base_fee_per_gas.unwrap()
-                        * MIN_PRICE_BUMP_MULTIPLIER_U64;
+                    if !bitcoin_mode {
+                        blob_base_fee_per_gas = previous_sent_tx.blob_base_fee_per_gas.unwrap()
+                            * MIN_PRICE_BUMP_MULTIPLIER_U64;
+                    }
                 }
             }
 
