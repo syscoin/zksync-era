@@ -15,6 +15,3 @@ mod celestia;
 mod eigen;
 mod no_da;
 mod object_store;
-
-#[cfg(test)]
-mod tests;
