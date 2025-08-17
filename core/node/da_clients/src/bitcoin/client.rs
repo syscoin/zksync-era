@@ -46,7 +46,7 @@ pub struct BitcoinDAClient {
     rpc_password: String,
     poda_url: String,
     // Lazily initialized funding address bound to a stable label
-    funding_address: Arc<OnceCell<String>>, 
+    funding_address: Arc<OnceCell<String>>,
 }
 
 impl BitcoinDAClient {
@@ -112,10 +112,13 @@ impl DataAvailabilityClient for BitcoinDAClient {
                 self.client
                     .ensure_own_wallet_and_address(address_label)
                     .await
-                    .map_err(|e| anyhow!(
-                        "Failed to ensure own wallet and address for label '{}': {}",
-                        address_label, e
-                    ))
+                    .map_err(|e| {
+                        anyhow!(
+                            "Failed to ensure own wallet and address for label '{}': {}",
+                            address_label,
+                            e
+                        )
+                    })
             })
             .await
             .map_err(to_non_retriable_da_error)?;

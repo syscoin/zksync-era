@@ -7,7 +7,10 @@ pub use self::{
     contract_verifier::ContractVerifierConfig,
     contracts::chain::ContractsConfig,
     // SYSCOIN
-    da_client::{avail::AvailConfig, bitcoin::BitcoinConfig, celestia::CelestiaConfig, eigen::EigenConfig, DAClientConfig},
+    da_client::{
+        avail::AvailConfig, bitcoin::BitcoinConfig, celestia::CelestiaConfig, eigen::EigenConfig,
+        DAClientConfig,
+    },
     da_dispatcher::DADispatcherConfig,
     database::{DBConfig, PostgresConfig},
     en::remote::RemoteENConfig,

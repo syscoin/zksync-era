@@ -145,7 +145,10 @@ The first ZK chain is generated upon ecosystem creation. You can also create add
 ```bash
 zkstack chain create
 ```
-Use `--l1-batch-commit-data-generator-mode validium` together with `--validium-type` to select an alternative DA layer. Example for Bitcoin:
+
+Use `--l1-batch-commit-data-generator-mode validium` together with `--validium-type` to select an alternative DA layer.
+Example for Bitcoin:
+
 ```bash
 zkstack chain create --l1-batch-commit-data-generator-mode validium --validium-type bitcoin
 ```

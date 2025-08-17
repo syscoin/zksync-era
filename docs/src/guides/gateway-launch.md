@@ -1,6 +1,7 @@
 # Launching a chain on ZK Gateway with Bitcoin DA
 
-This tutorial shows how to deploy Gateway contracts, create the first chain using Bitcoin as the data availability layer, and run the node using the new `smart_config` format.
+This tutorial shows how to deploy Gateway contracts, create the first chain using Bitcoin as the data availability
+layer, and run the node using the new `smart_config` format.
 
 1. **Create the ecosystem and initialize contracts**
 
@@ -63,15 +64,15 @@ This tutorial shows how to deploy Gateway contracts, create the first chain usin
    ```yaml
    da_client:
      client: Bitcoin
-     api_node_url: http://localhost:8369      # Syscoin NEVM RPC/API node
-     poda_url: https://poda.syscoin.org       # PoDA endpoint (or your own)
+     api_node_url: http://localhost:8369 # Syscoin NEVM RPC/API node
+     poda_url: https://poda.syscoin.org # PoDA endpoint (or your own)
    ```
 
    Then set the required secrets (credentials and Gateway RPC URL) in `chains/gateway/configs/secrets.yaml`:
 
    ```yaml
    l1:
-     gateway_rpc_url: http://127.0.0.1:4050/   # Gateway chain RPC (your Gateway node)
+     gateway_rpc_url: http://127.0.0.1:4050/ # Gateway chain RPC (your Gateway node)
 
    da_client:
      rpc_user: YOUR_SYSCOIN_RPC_USER

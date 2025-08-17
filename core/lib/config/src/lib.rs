@@ -4,8 +4,8 @@ pub use crate::{
     // SYSCOIN
     configs::{
         contracts::chain::ContractsConfig, full_config_schema, ApiConfig, AvailConfig,
-        BaseTokenAdjusterConfig, BitcoinConfig, CelestiaConfig, ContractVerifierConfig, DAClientConfig,
-        DADispatcherConfig, DBConfig, EigenConfig, EthConfig, EthWatchConfig,
+        BaseTokenAdjusterConfig, BitcoinConfig, CelestiaConfig, ContractVerifierConfig,
+        DAClientConfig, DADispatcherConfig, DBConfig, EigenConfig, EthConfig, EthWatchConfig,
         ExternalProofIntegrationApiConfig, GasAdjusterConfig, GenesisConfig, ObjectStoreConfig,
         PostgresConfig, RemoteENConfig, SnapshotsCreatorConfig,
     },
