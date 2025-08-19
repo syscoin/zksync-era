@@ -96,9 +96,9 @@
     "name": "0x Protocol Token"
   },
   {
-    "name": "Wrapped Ether",
+    "name": "Wrapped Syscoin",
     "symbol": "WETH",
     "decimals": 18,
-    "address": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
+    "address": "0xd3e822f3ef011Ca5f17D82C956D952D8d7C3A1BB"
   }
 ]
