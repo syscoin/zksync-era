@@ -9,6 +9,7 @@ use async_trait::async_trait;
 use bitcoin_da_client::{SyscoinClient, MAX_BLOB_SIZE};
 use hex::FromHex;
 use serde::{Deserialize, Serialize};
+use tokio::sync::OnceCell;
 use zksync_config::configs::da_client::bitcoin::{
     BitcoinConfig as BitcoinServerConfig, BitcoinSecrets,
 };
@@ -45,12 +46,14 @@ pub struct BitcoinDAClient {
     rpc_user: String,
     rpc_password: String,
     poda_url: String,
+    // Lazily initialized funding address bound to a stable label
+    funding_address: Arc<OnceCell<String>>, 
 }
 
 impl BitcoinDAClient {
     pub fn new(config: BitcoinServerConfig, secrets: BitcoinSecrets) -> Result<Self> {
         let timeout = Some(Duration::from_secs(30));
-        let wallet     = "wallet200999";
+        let wallet     = "da_wallet";
         let client = SyscoinClient::new(
             &config.api_node_url,
             &secrets.rpc_user,
@@ -67,6 +70,7 @@ impl BitcoinDAClient {
             rpc_user: secrets.rpc_user.clone(),
             rpc_password: secrets.rpc_password.clone(),
             poda_url: config.poda_url.clone(),
+            funding_address: Arc::new(OnceCell::new()),
         })
     }
 }
@@ -90,6 +94,7 @@ impl Clone for BitcoinDAClient {
             rpc_user: self.rpc_user.clone(),
             rpc_password: self.rpc_password.clone(),
             poda_url: self.poda_url.clone(),
+            funding_address: Arc::clone(&self.funding_address),
         }
     }
 }
@@ -101,6 +106,43 @@ impl DataAvailabilityClient for BitcoinDAClient {
         _batch_number: u32,
         data: Vec<u8>,
     ) -> Result<DispatchResponse, DAError> {
+        // Preflight once per process: ensure wallet exists and a stable labeled funding address
+        let funding_address = self
+            .funding_address
+            .get_or_try_init(|| async {
+                let address_label = "da_funding";
+
+                self.client
+                    .ensure_own_wallet_and_address(address_label)
+                    .await
+                    .map_err(|e| {
+                        anyhow!(
+                            "Failed to ensure own wallet and address for label '{}': {}",
+                            address_label,
+                            e
+                        )
+                    })
+            })
+            .await
+            .map_err(to_non_retriable_da_error)?;
+
+        match self.client.get_balance().await {
+            Ok(bal) if bal <= 0.0 => {
+                return Err(to_non_retriable_da_error(anyhow!(
+                    "Bitcoin DA wallet has 0 balance. Please fund the operator wallet at address: {}",
+                    funding_address
+                )));
+            }
+            Ok(_) => {}
+            Err(e) => {
+                // Treat balance fetch failures as retriable; node can retry.
+                return Err(to_retriable_da_error(anyhow!(
+                    "Failed to read wallet balance: {}",
+                    e
+                )));
+            }
+        }
+
         // Check for non-retriable errors first (client-side validation)
         let size_limit = MAX_BLOB_SIZE;
         if data.is_empty() {

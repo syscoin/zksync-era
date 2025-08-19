@@ -61,5 +61,5 @@ pbjson-types.workspace = true
 rust-eigenda-client.workspace = true
 
 # Bitcoin dependencies
-bitcoin_da_client = { git = "https://github.com/SYS-Labs/bitcoin_da_client.git", branch = "update-lib" }
+bitcoin_da_client = { git = "https://github.com/SYS-Labs/bitcoin_da_client.git"}
 
