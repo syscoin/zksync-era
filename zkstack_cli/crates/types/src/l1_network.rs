@@ -25,6 +25,8 @@ pub enum L1Network {
     Localhost,
     Sepolia,
     Holesky,
+    // SYSCOIN
+    Tanenbaum,
     Mainnet,
 }
 
@@ -36,6 +38,7 @@ impl L1Network {
             L1Network::Sepolia => 11_155_111,
             L1Network::Holesky => 17000,
             // SYSCOIN
+            L1Network::Tanenbaum => 5700,
             L1Network::Mainnet => 57,
         }
     }
@@ -46,6 +49,8 @@ impl L1Network {
             L1Network::Sepolia | L1Network::Holesky => {
                 Some(Address::from_str("0x73d59fe232fce421d1365d6a5beec49acde3d0d9").unwrap())
             }
+            // SYSCOIN
+            L1Network::Tanenbaum => None,
             L1Network::Mainnet => None, // TODO: add mainnet address after it is known
         }
     }

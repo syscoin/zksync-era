@@ -28,6 +28,9 @@ pub enum Network {
     Sepolia,
     /// Ethereum Holešky testnet.
     Holesky,
+    // SYSCOIN
+    /// Tanenbaum testnet.
+    Tanenbaum,
     /// Self-hosted Ethereum network.
     Localhost,
     /// Self-hosted L2 network.
@@ -51,6 +54,8 @@ impl FromStr for Network {
             "localhostL2" => Self::LocalhostL2,
             "sepolia" => Self::Sepolia,
             "holesky" => Self::Holesky,
+            // SYSCOIN
+            "tanenbaum" => Self::Tanenbaum,
             "test" => Self::Test,
             another => return Err(another.to_owned()),
         })
@@ -68,6 +73,8 @@ impl fmt::Display for Network {
             Self::LocalhostL2 => write!(f, "localhostL2"),
             Self::Sepolia => write!(f, "sepolia"),
             Self::Holesky => write!(f, "holesky"),
+            // SYSCOIN
+            Self::Tanenbaum => write!(f, "tanenbaum"),
             Self::Unknown => write!(f, "unknown"),
             Self::Test => write!(f, "test"),
         }
@@ -78,13 +85,16 @@ impl Network {
     /// Returns the network chain ID on the Ethereum side.
     pub fn from_chain_id(chain_id: SLChainId) -> Self {
         match *chain_id {
-            1 => Self::Mainnet,
+            // SYSCOIN
+            57 => Self::Mainnet,
             3 => Self::Ropsten,
             4 => Self::Rinkeby,
             5 => Self::Goerli,
             9 => Self::Localhost,
             11155111 => Self::Sepolia,
             17000 => Self::Holesky,
+            // SYSCOIN
+            5700 => Self::Tanenbaum,
             270 => Self::LocalhostL2,
             _ => Self::Unknown,
         }
@@ -93,13 +103,16 @@ impl Network {
     /// Returns the network chain ID on the Ethereum side.
     pub fn chain_id(self) -> SLChainId {
         match self {
-            Self::Mainnet => SLChainId(1),
+            // SYSCOIN
+            Self::Mainnet => SLChainId(57),
             Self::Ropsten => SLChainId(3),
             Self::Rinkeby => SLChainId(4),
             Self::Goerli => SLChainId(5),
             Self::Localhost => SLChainId(9),
             Self::Sepolia => SLChainId(11155111),
             Self::Holesky => SLChainId(17000),
+            // SYSCOIN
+            Self::Tanenbaum => SLChainId(5700),
             Self::LocalhostL2 => SLChainId(270),
             Self::Unknown => panic!("Unknown chain ID"),
             Self::Test => panic!("Test chain ID"),
