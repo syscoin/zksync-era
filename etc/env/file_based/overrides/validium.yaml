@@ -4,9 +4,10 @@ eth:
 state_keeper:
   pubdata_overhead_part: 0
   compute_overhead_part: 1
-da_client:
+# SYSCOIN
+#da_client:
   # CHANGE: switch to inner tagged enum for DA client
-  client: NoDA
+  #client: NoDA
   # CHANGE: switch to inner tagged enum for Avail client, e.g.:
   #  da_client:
   #    bridge_api_url: https://turing-bridge-api.avail.so/
