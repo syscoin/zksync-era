@@ -102,7 +102,9 @@ impl InitArgs {
                 ),
                 Some(da_configs::ValidiumTypeInternal::EigenDA) => Some(ValidiumType::EigenDA),
                 // SYSCOIN
-                Some(da_configs::ValidiumTypeInternal::Bitcoin) => Some(ValidiumType::Bitcoin),
+                Some(da_configs::ValidiumTypeInternal::Bitcoin) => {
+                    panic!("BitcoinDA is not supported via CLI args, use interactive mode")
+                }
             },
             _ => None,
         };
