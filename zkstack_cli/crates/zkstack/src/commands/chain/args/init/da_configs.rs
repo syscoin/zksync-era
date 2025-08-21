@@ -63,15 +63,17 @@ impl ValidiumType {
             ValidiumTypeInternal::Bitcoin => {
                 let cfg = BitcoinConfig {
                     api_node_url: Prompt::new("Bitcoin DA RPC URL")
-                        .default("http://127.0.0.1:8332")
+                        .default("http://127.0.0.1:8369")
                         .ask(),
                     poda_url: Prompt::new("PoDA URL")
-                        .default("http://127.0.0.1:28332")
+                        .default("https://poda.syscoin.org")
                         .ask(),
                 };
                 let secrets = BitcoinSecrets {
                     rpc_user: Prompt::new("Bitcoin DA RPC user").default("user").ask(),
-                    rpc_password: Prompt::new("Bitcoin DA RPC password").default("pass").ask(),
+                    rpc_password: Prompt::new("Bitcoin DA RPC password")
+                        .default("password")
+                        .ask(),
                 };
                 ValidiumType::Bitcoin((cfg, secrets))
             }
