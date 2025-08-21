@@ -4,7 +4,14 @@ use strum::{Display, EnumIter, IntoEnumIterator};
 use url::Url;
 use zkstack_cli_common::{Prompt, PromptSelect};
 use zkstack_cli_config::da::{
-    AvailClientConfig, AvailConfig, AvailDefaultConfig, AvailGasRelayConfig, AvailSecrets,
+    AvailClientConfig,
+    AvailConfig,
+    AvailDefaultConfig,
+    AvailGasRelayConfig,
+    AvailSecrets,
+    // SYSCOIN
+    BitcoinConfig,
+    BitcoinSecrets,
 };
 
 use crate::{
@@ -45,7 +52,7 @@ pub enum ValidiumType {
     Avail((AvailConfig, AvailSecrets)),
     EigenDA,
     // SYSCOIN
-    Bitcoin,
+    Bitcoin((BitcoinConfig, BitcoinSecrets)),
 }
 
 impl ValidiumType {
@@ -53,7 +60,21 @@ impl ValidiumType {
         match PromptSelect::new(MSG_VALIDIUM_TYPE_PROMPT, ValidiumTypeInternal::iter()).ask() {
             ValidiumTypeInternal::EigenDA => ValidiumType::EigenDA, // EigenDA doesn't support configuration through CLI
             // SYSCOIN
-            ValidiumTypeInternal::Bitcoin => ValidiumType::Bitcoin,
+            ValidiumTypeInternal::Bitcoin => {
+                let cfg = BitcoinConfig {
+                    api_node_url: Prompt::new("Bitcoin DA RPC URL")
+                        .default("http://127.0.0.1:8332")
+                        .ask(),
+                    poda_url: Prompt::new("PoDA URL")
+                        .default("http://127.0.0.1:28332")
+                        .ask(),
+                };
+                let secrets = BitcoinSecrets {
+                    rpc_user: Prompt::new("Bitcoin DA RPC user").default("user").ask(),
+                    rpc_password: Prompt::new("Bitcoin DA RPC password").default("pass").ask(),
+                };
+                ValidiumType::Bitcoin((cfg, secrets))
+            }
             ValidiumTypeInternal::NoDA => ValidiumType::NoDA,
             ValidiumTypeInternal::Avail => {
                 let avail_client_type = PromptSelect::new(

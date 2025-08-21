@@ -7,7 +7,8 @@ use zksync_consensus_crypto::TextFmt;
 use zksync_consensus_roles::{node, validator};
 
 use crate::{
-    da::AvailSecrets,
+    // SYSCOIN
+    da::{AvailSecrets, BitcoinSecrets},
     raw::{PatchedConfig, RawConfig},
 };
 
@@ -100,6 +101,12 @@ impl SecretsConfigPatch {
     pub fn set_avail_secrets(&mut self, secrets: &AvailSecrets) -> anyhow::Result<()> {
         self.0.insert_yaml("da_client", secrets)?;
         self.0.insert("da_client.client", "Avail")
+    }
+
+    // SYSCOIN: write Bitcoin DA secrets
+    pub fn set_bitcoin_secrets(&mut self, secrets: &BitcoinSecrets) -> anyhow::Result<()> {
+        self.0.insert_yaml("da_client", secrets)?;
+        self.0.insert("da_client.client", "Bitcoin")
     }
 
     pub fn set_consensus_keys(&mut self, consensus_keys: RawConsensusKeys) -> anyhow::Result<()> {

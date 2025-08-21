@@ -15,7 +15,7 @@ layer, and run the node using the new `smart_config` format.
    ```bash
    zkstack chain create \
        --chain-name gateway \
-       --chain-id 57000 \
+       --chain-id 57057 \
        --l1-batch-commit-data-generator-mode validium
    ```
 
@@ -39,7 +39,7 @@ layer, and run the node using the new `smart_config` format.
    # Create the chain
    zkstack chain create \
        --chain-name zksys \
-       --chain-id 57001 \
+       --chain-id 57057\
        --l1-batch-commit-data-generator-mode rollup
 
    # Initialize it against Gateway (uses addresses generated in `chains/gateway/configs/gateway.yaml`)

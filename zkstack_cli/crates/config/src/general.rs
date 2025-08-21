@@ -7,9 +7,12 @@ use zksync_basic_types::pubdata_da::PubdataSendingMode;
 
 use crate::{
     consensus::{ConsensusConfigPatch, ConsensusGenesisSpecs},
-    da::AvailConfig,
+    // SYSCOIN
+    da::{AvailConfig, BitcoinConfig},
     raw::{PatchedConfig, RawConfig},
-    ChainConfig, ObjectStoreConfig, ObjectStoreMode,
+    ChainConfig,
+    ObjectStoreConfig,
+    ObjectStoreMode,
 };
 
 pub struct RocksDbs {
@@ -256,6 +259,13 @@ impl GeneralConfigPatch {
     pub fn set_avail_client(&mut self, client: &AvailConfig) -> anyhow::Result<()> {
         self.0.insert_yaml("da_client", client)?;
         self.0.insert("da_client.client", "Avail")?;
+        Ok(())
+    }
+
+    // SYSCOIN: configure Bitcoin DA client block in general.yaml
+    pub fn set_bitcoin_client(&mut self, client: &BitcoinConfig) -> anyhow::Result<()> {
+        self.0.insert_yaml("da_client", client)?;
+        self.0.insert("da_client.client", "Bitcoin")?;
         Ok(())
     }
 

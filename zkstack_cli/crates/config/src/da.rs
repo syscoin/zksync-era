@@ -36,3 +36,16 @@ pub struct AvailSecrets {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub gas_relay_api_key: Option<String>,
 }
+
+// SYSCOIN
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct BitcoinConfig {
+    pub api_node_url: String,
+    pub poda_url: String,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct BitcoinSecrets {
+    pub rpc_user: String,
+    pub rpc_password: String,
+}
