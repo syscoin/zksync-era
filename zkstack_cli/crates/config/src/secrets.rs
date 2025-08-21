@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::Path;
 
 use url::Url;
 use xshell::Shell;
@@ -38,7 +38,7 @@ impl RawConsensusKeys {
 pub struct SecretsConfig(RawConfig);
 
 impl SecretsConfig {
-    pub async fn read(shell: &Shell, path: PathBuf) -> anyhow::Result<Self> {
+    pub async fn read(shell: &Shell, path: &Path) -> anyhow::Result<Self> {
         RawConfig::read(shell, path).await.map(Self)
     }
 
@@ -72,7 +72,7 @@ impl SecretsConfig {
 pub struct SecretsConfigPatch(PatchedConfig);
 
 impl SecretsConfigPatch {
-    pub fn empty(shell: &Shell, path: PathBuf) -> Self {
+    pub fn empty(shell: &Shell, path: &Path) -> Self {
         Self(PatchedConfig::empty(shell, path))
     }
 
