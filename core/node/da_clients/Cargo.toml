@@ -65,4 +65,4 @@ rust-eigenda-v2-common.workspace = true
 rust-eigenda-signers.workspace = true
 
 # SYSCOIN Bitcoin dependencies
-bitcoin_da_client = { git = "https://github.com/SYS-Labs/bitcoin_da_client.git", tag = "v0.1.6" }
+bitcoin_da_client = { git = "https://github.com/SYS-Labs/bitcoin_da_client.git", tag = "v0.1.7" }
