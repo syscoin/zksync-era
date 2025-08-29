@@ -91,6 +91,30 @@ layer, and run the node using the new `smart_config` format.
 
    For more details, see the [Bitcoin DA smart_config](./bitcoin-da-client.md#smart_config-example).
 
+   Optional: zkSYS precommit (fast interop)
+
+   If you want the edge chain (e.g., `zkSYS`) to post precommits to Gateway for faster interop checks, add the following
+   to the edge chain config (not Gateway):
+
+   ```yaml
+   # chains/zksys/configs/general.yaml
+   eth:
+     sender:
+       precommit_params:
+         l2_blocks_to_aggregate: 15 # ~30s at 2s/miniblock
+         deadline: 30 sec # OR condition with the block span
+   ```
+
+   Alternatively via env vars for the zkSYS node process:
+
+   ```bash
+   export ETH_SENDER_SENDER_PRECOMMIT_PARAMS_L2_BLOCKS_TO_AGGREGATE=15
+   export ETH_SENDER_SENDER_PRECOMMIT_PARAMS_DEADLINE="30 sec"
+   ```
+
+   Note: Gateway does not emit precommits by default. To keep Gateway from gating commits on precommit finalization,
+   leave `precommit_params` unset in Gateway. Enable it on Gateway only if you explicitly want Gateway→L1 precommits.
+
 7. **Run the nodes**
 
    ```bash
