@@ -33,6 +33,9 @@ pub(crate) struct GasAdjusterFeesOracle {
     pub max_acceptable_priority_fee_in_gwei: u64,
     pub time_in_mempool_in_l1_blocks_cap: u32,
     pub max_acceptable_base_fee_in_wei: u64,
+    /// SYSCOIN When true, we are operating with custom DA (e.g., BitcoinDA) and should
+    /// skip blob fee assertions/bumps in the blob-fee path.
+    pub skip_blob_fee_checks: bool,
 }
 
 impl GasAdjusterFeesOracle {
@@ -81,17 +84,15 @@ impl GasAdjusterFeesOracle {
         let mut blob_base_fee_per_gas = self
             .gas_adjuster
             .get_blob_tx_blob_base_fee(capped_time_in_mempool_in_l1_blocks);
-        // SYSCOIN: Skip blob fee checks when using Bitcoin DA.
-        let bitcoin_mode = std::env::var("DA_CLIENT")
-            .map(|v| v.eq_ignore_ascii_case("bitcoin"))
-            .unwrap_or(false);
-        if !bitcoin_mode {
+        // SYSCOIN Skip blob fee checks when operating with custom DA (e.g., BitcoinDA).
+        if !self.skip_blob_fee_checks {
             self.assert_fee_is_not_zero(blob_base_fee_per_gas, "blob");
         }
 
         let mut priority_fee_per_gas = self.gas_adjuster.get_blob_tx_priority_fee();
         if let Some(previous_sent_tx) = previous_sent_tx {
-            let blob_result = if bitcoin_mode {
+            // SYSCOIN Skip blob fee checks when operating with custom DA (e.g., BitcoinDA).
+            let blob_result = if self.skip_blob_fee_checks {
                 Ok(())
             } else {
                 self.verify_base_fee_not_too_low_on_resend(
@@ -122,7 +123,8 @@ impl GasAdjusterFeesOracle {
                         previous_sent_tx.base_fee_per_gas * MIN_PRICE_BUMP_MULTIPLIER_U64;
                 }
                 (Err(_), Ok(_)) => {
-                    if !bitcoin_mode {
+                    // SYSCOIN Skip blob fee checks when operating with custom DA (e.g., BitcoinDA).
+                    if !self.skip_blob_fee_checks {
                         blob_base_fee_per_gas = previous_sent_tx.blob_base_fee_per_gas.unwrap()
                             * MIN_PRICE_BUMP_MULTIPLIER_U64;
                     }
