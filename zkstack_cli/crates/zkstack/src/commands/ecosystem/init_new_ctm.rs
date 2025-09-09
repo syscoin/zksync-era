@@ -9,6 +9,7 @@ use zkstack_cli_common::{
 use zkstack_cli_config::{
     forge_interface::deploy_ecosystem::input::InitialDeploymentConfig,
     traits::SaveConfigWithBasePath, ContractsConfig, EcosystemConfig, ZkStackConfig,
+    ZkStackConfigTrait,
 };
 
 use super::{
@@ -28,7 +29,7 @@ pub async fn run(args: InitNewCTMArgs, shell: &Shell) -> anyhow::Result<()> {
     let ecosystem_config = ZkStackConfig::ecosystem(shell)?;
 
     if args.update_submodules.is_none() || args.update_submodules == Some(true) {
-        git::submodule_update(shell, &ecosystem_config.link_to_code)?;
+        git::submodule_update(shell, &ecosystem_config.link_to_code())?;
     }
 
     let initial_deployment_config = match ecosystem_config.get_initial_deployment_config() {
@@ -62,11 +63,11 @@ async fn init_ctm(
 ) -> anyhow::Result<ContractsConfig> {
     let spinner = Spinner::new(MSG_INTALLING_DEPS_SPINNER);
     if !init_args.skip_contract_compilation_override {
-        install_yarn_dependencies(shell, &ecosystem_config.link_to_code)?;
-        build_da_contracts(shell, &ecosystem_config.link_to_code)?;
-        build_l1_contracts(shell.clone(), &ecosystem_config.link_to_code)?;
-        build_system_contracts(shell.clone(), &ecosystem_config.link_to_code)?;
-        build_l2_contracts(shell.clone(), &ecosystem_config.link_to_code)?;
+        install_yarn_dependencies(shell, &ecosystem_config.link_to_code())?;
+        build_da_contracts(shell, &ecosystem_config.contracts_path())?;
+        build_l1_contracts(shell.clone(), &ecosystem_config.contracts_path())?;
+        build_system_contracts(shell.clone(), &ecosystem_config.contracts_path())?;
+        build_l2_contracts(shell.clone(), &ecosystem_config.contracts_path())?;
     }
     spinner.finish();
 
@@ -78,12 +79,14 @@ async fn init_ctm(
         initial_deployment_config,
         init_args.support_l2_legacy_shared_bridge_test,
         init_args.bridgehub_address, // Scripts are expected to consume 0 address for BH
+        init_args.zksync_os,
     )
     .await?;
     contracts.save_with_base_path(shell, &ecosystem_config.config)?;
     Ok(contracts)
 }
 
+#[allow(clippy::too_many_arguments)]
 pub async fn deploy_new_ctm(
     shell: &Shell,
     ecosystem: &mut EcosystemArgsFinal,
@@ -92,6 +95,7 @@ pub async fn deploy_new_ctm(
     initial_deployment_config: &InitialDeploymentConfig,
     support_l2_legacy_shared_bridge_test: bool,
     bridgehub_address: Option<H160>,
+    zksync_os: bool,
 ) -> anyhow::Result<ContractsConfig> {
     let l1_rpc_url = ecosystem.l1_rpc_url.clone();
     let spinner = Spinner::new(MSG_DEPLOYING_ECOSYSTEM_CONTRACTS_SPINNER);
@@ -105,13 +109,14 @@ pub async fn deploy_new_ctm(
         true,
         support_l2_legacy_shared_bridge_test,
         bridgehub_address,
+        zksync_os,
     )
     .await?;
     spinner.finish();
 
     accept_owner(
         shell,
-        ecosystem_config.path_to_l1_foundry(),
+        ecosystem_config.path_to_foundry_scripts(),
         contracts_config.l1.governance_addr,
         &ecosystem_config.get_wallets()?.governor,
         contracts_config
@@ -124,7 +129,7 @@ pub async fn deploy_new_ctm(
 
     accept_admin(
         shell,
-        ecosystem_config.path_to_l1_foundry(),
+        ecosystem_config.path_to_foundry_scripts(),
         contracts_config.l1.chain_admin_addr,
         &ecosystem_config.get_wallets()?.governor,
         contracts_config

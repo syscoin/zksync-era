@@ -12,7 +12,7 @@ use zkstack_cli_common::{
 use zkstack_cli_config::{
     forge_interface::deploy_ecosystem::input::InitialDeploymentConfig,
     traits::{FileConfigWithDefaultName, ReadConfig, SaveConfigWithBasePath},
-    ContractsConfig, EcosystemConfig, ZkStackConfig,
+    ContractsConfig, EcosystemConfig, ZkStackConfig, ZkStackConfigTrait,
 };
 use zkstack_cli_types::L1Network;
 
@@ -44,7 +44,7 @@ pub async fn run(args: EcosystemInitArgs, shell: &Shell) -> anyhow::Result<()> {
     let ecosystem_config = ZkStackConfig::ecosystem(shell)?;
 
     if args.update_submodules.is_none() || args.update_submodules == Some(true) {
-        git::submodule_update(shell, &ecosystem_config.link_to_code)?;
+        git::submodule_update(shell, &ecosystem_config.link_to_code())?;
     }
 
     let initial_deployment_config = match ecosystem_config.get_initial_deployment_config() {
@@ -53,7 +53,6 @@ pub async fn run(args: EcosystemInitArgs, shell: &Shell) -> anyhow::Result<()> {
     };
 
     let mut final_ecosystem_args = args
-        .clone()
         .fill_values_with_prompt(ecosystem_config.l1_network)
         .await?;
 
@@ -91,7 +90,7 @@ pub async fn run(args: EcosystemInitArgs, shell: &Shell) -> anyhow::Result<()> {
     // Initialize chain(s)
     let mut chains: Vec<String> = vec![];
     if !final_ecosystem_args.ecosystem_only {
-        chains = init_chains(&args, &final_ecosystem_args, shell, &ecosystem_config).await?;
+        chains = init_chains(final_ecosystem_args.clone(), shell, &ecosystem_config).await?;
     }
     logger::outro(msg_ecosystem_initialized(&chains.join(",")));
 
@@ -106,11 +105,11 @@ async fn init_ecosystem(
 ) -> anyhow::Result<ContractsConfig> {
     let spinner = Spinner::new(MSG_INTALLING_DEPS_SPINNER);
     if !init_args.skip_contract_compilation_override {
-        install_yarn_dependencies(shell, &ecosystem_config.link_to_code)?;
-        build_da_contracts(shell, &ecosystem_config.link_to_code)?;
-        build_l1_contracts(shell.clone(), &ecosystem_config.link_to_code)?;
-        build_system_contracts(shell.clone(), &ecosystem_config.link_to_code)?;
-        build_l2_contracts(shell.clone(), &ecosystem_config.link_to_code)?;
+        install_yarn_dependencies(shell, &ecosystem_config.link_to_code())?;
+        build_da_contracts(shell, &ecosystem_config.contracts_path())?;
+        build_l1_contracts(shell.clone(), &ecosystem_config.contracts_path())?;
+        build_system_contracts(shell.clone(), &ecosystem_config.contracts_path())?;
+        build_l2_contracts(shell.clone(), &ecosystem_config.contracts_path())?;
     }
     spinner.finish();
 
@@ -134,6 +133,7 @@ async fn init_ecosystem(
         initial_deployment_config,
         init_args.support_l2_legacy_shared_bridge_test,
         init_args.bridgehub_address,
+        init_args.zksync_os,
     )
     .await?;
     contracts.save_with_base_path(shell, &ecosystem_config.config)?;
@@ -243,7 +243,7 @@ async fn deploy_ecosystem_inner(
 
     accept_owner(
         shell,
-        config.path_to_l1_foundry(),
+        config.path_to_foundry_scripts(),
         contracts_config.l1.governance_addr,
         &config.get_wallets()?.governor,
         contracts_config.ecosystem_contracts.bridgehub_proxy_addr,
@@ -253,7 +253,7 @@ async fn deploy_ecosystem_inner(
     .await?;
     accept_admin(
         shell,
-        config.path_to_l1_foundry(),
+        config.path_to_foundry_scripts(),
         contracts_config.l1.chain_admin_addr,
         &config.get_wallets()?.governor,
         contracts_config.ecosystem_contracts.bridgehub_proxy_addr,
@@ -266,7 +266,7 @@ async fn deploy_ecosystem_inner(
     // need to accept it
     accept_owner(
         shell,
-        config.path_to_l1_foundry(),
+        config.path_to_foundry_scripts(),
         contracts_config.l1.governance_addr,
         &config.get_wallets()?.governor,
         contracts_config.bridges.shared.l1_address,
@@ -277,7 +277,7 @@ async fn deploy_ecosystem_inner(
 
     accept_owner(
         shell,
-        config.path_to_l1_foundry(),
+        config.path_to_foundry_scripts(),
         contracts_config.l1.governance_addr,
         &config.get_wallets()?.governor,
         contracts_config

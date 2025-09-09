@@ -23,11 +23,11 @@ use zkstack_cli_config::{
         },
     },
     traits::{ReadConfig, SaveConfig, SaveConfigWithBasePath},
-    ContractsConfig, EcosystemConfig, GenesisConfig, GENESIS_FILE,
+    ContractsConfig, EcosystemConfig, GenesisConfig, ZkStackConfigTrait, GENESIS_FILE,
 };
 use zkstack_cli_types::{L1Network, ProverMode};
 
-use super::args::init::{EcosystemInitArgs, EcosystemInitArgsFinal};
+use super::args::init::EcosystemInitArgsFinal;
 use crate::{
     commands::chain::{self},
     messages::{msg_chain_load_err, msg_initializing_chain, MSG_DEPLOYING_ERC20_SPINNER},
@@ -51,9 +51,11 @@ pub async fn deploy_l1(
     broadcast: bool,
     support_l2_legacy_shared_bridge_test: bool,
     bridgehub_address: Option<H160>,
+    zksync_os: bool,
 ) -> anyhow::Result<ContractsConfig> {
-    let deploy_config_path = DEPLOY_ECOSYSTEM_SCRIPT_PARAMS.input(&config.path_to_l1_foundry());
-    let genesis_config_path = config.get_default_configs_path().join(GENESIS_FILE);
+    let deploy_config_path =
+        DEPLOY_ECOSYSTEM_SCRIPT_PARAMS.input(&config.path_to_foundry_scripts());
+    let genesis_config_path = config.default_configs_path().join(GENESIS_FILE);
     let default_genesis_config = GenesisConfig::read(shell, &genesis_config_path).await?;
     let default_genesis_input = GenesisInput::new(&default_genesis_config)?;
 
@@ -67,6 +69,7 @@ pub async fn deploy_l1(
         config.prover_version == ProverMode::NoProofs,
         config.l1_network,
         support_l2_legacy_shared_bridge_test,
+        zksync_os,
     );
     deploy_config.save(shell, deploy_config_path)?;
 
@@ -74,7 +77,7 @@ pub async fn deploy_l1(
         .encode("runWithBridgehub", (bridgehub_address.unwrap_or_default(),)) // Script works with zero address
         .unwrap();
 
-    let mut forge = Forge::new(&config.path_to_l1_foundry())
+    let mut forge = Forge::new(&config.path_to_foundry_scripts())
         .script(&DEPLOY_ECOSYSTEM_SCRIPT_PARAMS.script(), forge_args.clone())
         .with_ffi()
         .with_calldata(&calldata)
@@ -104,7 +107,7 @@ pub async fn deploy_l1(
 
     let script_output = DeployL1Output::read(
         shell,
-        DEPLOY_ECOSYSTEM_SCRIPT_PARAMS.output(&config.path_to_l1_foundry()),
+        DEPLOY_ECOSYSTEM_SCRIPT_PARAMS.output(&config.path_to_foundry_scripts()),
     )?;
     let mut contracts_config = ContractsConfig::default();
     contracts_config.update_from_l1_output(&script_output);
@@ -124,8 +127,8 @@ pub async fn deploy_l1_core_contracts(
     support_l2_legacy_shared_bridge_test: bool,
 ) -> anyhow::Result<ContractsConfig> {
     let deploy_config_path =
-        DEPLOY_ECOSYSTEM_CORE_CONTRACTS_SCRIPT_PARAMS.input(&config.path_to_l1_foundry());
-    let genesis_config_path = config.get_default_configs_path().join(GENESIS_FILE);
+        DEPLOY_ECOSYSTEM_CORE_CONTRACTS_SCRIPT_PARAMS.input(&config.path_to_foundry_scripts());
+    let genesis_config_path = config.default_configs_path().join(GENESIS_FILE);
     let default_genesis_config = GenesisConfig::read(shell, &genesis_config_path).await?;
     let default_genesis_input = GenesisInput::new(&default_genesis_config)?;
     let wallets_config = config.get_wallets()?;
@@ -138,11 +141,13 @@ pub async fn deploy_l1_core_contracts(
         config.prover_version == ProverMode::NoProofs,
         config.l1_network,
         support_l2_legacy_shared_bridge_test,
+        // ZKSync OS flag is not used in core contracts deployment
+        false,
     );
 
     deploy_config.save(shell, deploy_config_path)?;
 
-    let mut forge = Forge::new(&config.path_to_l1_foundry())
+    let mut forge = Forge::new(&config.path_to_foundry_scripts())
         .script(
             &DEPLOY_ECOSYSTEM_CORE_CONTRACTS_SCRIPT_PARAMS.script(),
             forge_args.clone(),
@@ -174,7 +179,7 @@ pub async fn deploy_l1_core_contracts(
 
     let script_output = DeployL1Output::read(
         shell,
-        DEPLOY_ECOSYSTEM_SCRIPT_PARAMS.output(&config.path_to_l1_foundry()),
+        DEPLOY_ECOSYSTEM_SCRIPT_PARAMS.output(&config.path_to_foundry_scripts()),
     )?;
     let mut contracts_config = ContractsConfig::default();
     contracts_config.update_from_l1_output(&script_output);
@@ -192,7 +197,7 @@ pub async fn register_ctm_on_existing_bh(
 ) -> anyhow::Result<()> {
     let wallets_config = config.get_wallets()?;
 
-    let mut forge = Forge::new(&config.path_to_l1_foundry())
+    let mut forge = Forge::new(&config.path_to_foundry_scripts())
         .script(&REGISTER_CTM_SCRIPT_PARAMS.script(), forge_args.clone())
         .with_ffi()
         .with_rpc_url(l1_rpc_url.to_string());
@@ -228,7 +233,7 @@ pub async fn deploy_erc20(
     l1_rpc_url: String,
 ) -> anyhow::Result<ERC20Tokens> {
     let deploy_config_path =
-        DEPLOY_ERC20_SCRIPT_PARAMS.input(&ecosystem_config.path_to_l1_foundry());
+        DEPLOY_ERC20_SCRIPT_PARAMS.input(&ecosystem_config.path_to_foundry_scripts());
     let wallets = ecosystem_config.get_wallets()?;
     DeployErc20Config::new(
         erc20_deployment_config,
@@ -241,7 +246,7 @@ pub async fn deploy_erc20(
     )
     .save(shell, deploy_config_path)?;
 
-    let mut forge = Forge::new(&ecosystem_config.path_to_l1_foundry())
+    let mut forge = Forge::new(&ecosystem_config.path_to_foundry_scripts())
         .script(&DEPLOY_ERC20_SCRIPT_PARAMS.script(), forge_args.clone())
         .with_ffi()
         .with_rpc_url(l1_rpc_url)
@@ -260,15 +265,14 @@ pub async fn deploy_erc20(
 
     let result = ERC20Tokens::read(
         shell,
-        DEPLOY_ERC20_SCRIPT_PARAMS.output(&ecosystem_config.path_to_l1_foundry()),
+        DEPLOY_ERC20_SCRIPT_PARAMS.output(&ecosystem_config.path_to_foundry_scripts()),
     )?;
     result.save_with_base_path(shell, &ecosystem_config.config)?;
     Ok(result)
 }
 
 pub async fn init_chains(
-    init_args: &EcosystemInitArgs,
-    final_init_args: &EcosystemInitArgsFinal,
+    mut args: EcosystemInitArgsFinal,
     shell: &Shell,
     ecosystem_config: &EcosystemConfig,
 ) -> anyhow::Result<Vec<String>> {
@@ -279,15 +283,19 @@ pub async fn init_chains(
         ecosystem_config.list_of_chains()
     };
     // Set default values for dev mode
-    let mut deploy_paymaster = init_args.deploy_paymaster;
-    let mut genesis_args = init_args.get_genesis_args().clone();
-    if final_init_args.dev {
+    let mut deploy_paymaster = args.deploy_paymaster;
+    let genesis_args = &mut args.genesis_args;
+    if args.dev {
         deploy_paymaster = Some(true);
-        genesis_args.dev = true;
+        if let Some(genesis) = genesis_args {
+            genesis.dev = true;
+        }
     }
     // Can't initialize multiple chains with the same DB
     if list_of_chains.len() > 1 {
-        genesis_args.reset_db_names();
+        if let Some(genesis) = genesis_args {
+            genesis.reset_db_names();
+        }
     }
     // Initialize chains
     for chain_name in &list_of_chains {
@@ -297,18 +305,22 @@ pub async fn init_chains(
             .context(msg_chain_load_err(chain_name))?;
 
         let chain_init_args = chain::args::init::InitArgs {
-            forge_args: final_init_args.forge_args.clone(),
-            server_db_url: genesis_args.server_db_url.clone(),
-            server_db_name: genesis_args.server_db_name.clone(),
-            dont_drop: genesis_args.dont_drop,
+            forge_args: args.forge_args.clone(),
+            server_db_url: genesis_args.as_ref().and_then(|a| a.server_db_url.clone()),
+            server_db_name: genesis_args.as_ref().and_then(|a| a.server_db_name.clone()),
+            dont_drop: genesis_args
+                .as_ref()
+                .map(|a| a.dont_drop)
+                .unwrap_or_default(),
             deploy_paymaster,
-            l1_rpc_url: Some(final_init_args.ecosystem.l1_rpc_url.clone()),
-            no_port_reallocation: final_init_args.no_port_reallocation,
-            update_submodules: init_args.update_submodules,
-            dev: final_init_args.dev,
-            validium_args: final_init_args.validium_args.clone(),
-            server_command: genesis_args.server_command.clone(),
-            make_permanent_rollup: init_args.make_permanent_rollup,
+            l1_rpc_url: Some(args.ecosystem.l1_rpc_url.clone()),
+            no_port_reallocation: args.no_port_reallocation,
+            update_submodules: args.update_submodules,
+            dev: args.dev,
+            validium_args: args.validium_args.clone(),
+            server_command: genesis_args.as_ref().and_then(|a| a.server_command.clone()),
+            make_permanent_rollup: args.make_permanent_rollup,
+            no_genesis: genesis_args.is_none(),
         };
         let final_chain_init_args = chain_init_args.fill_values_with_prompt(&chain_config);
 
