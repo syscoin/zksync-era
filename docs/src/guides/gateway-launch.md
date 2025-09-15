@@ -3,43 +3,35 @@
 This tutorial shows how to deploy Gateway contracts, create the first chain using Bitcoin as the data availability
 layer, and run the node using the new `smart_config` format.
 
-1. **Create the ecosystem and initialize contracts**
+
+1. **Create the Gateway ecosystem (call it 'gateway' and use chain-id 57057) in Validium mode**
 
    ```bash
    zkstack ecosystem create
-   zkstack ecosystem init
    ```
 
-2. **Create the Gateway chain in Validium mode**
+2. **Init the Gateway ecosystem with Bitcoin DA (tanenbaum=5700, mainnet=57)**
 
    ```bash
-   zkstack chain create \
-       --chain-name gateway \
-       --chain-id 57057 \
-       --l1-batch-commit-data-generator-mode validium
+   cd gateway
+   zkstack dev clean contracts-cache
+   FOUNDRY_EVM_VERSION=shanghai FOUNDRY_CHAIN_ID=5700 zkstack ecosystem init
    ```
 
-3. **Init the Gateway chain with Bitcoin DA**
+3. **Convert the chain to a Gateway settlement layer**
 
    ```bash
-   zkstack chain init \
-       --chain gateway \
-       --validium-type bitcoin
-   ```
-
-4. **Convert the chain to a Gateway settlement layer**
-
-   ```bash
+   zkstack chain gateway create-tx-filterer --chain gateway
    zkstack chain gateway convert-to-gateway --chain gateway
    ```
 
-5. **Create and register a child Rollup chain (zkSYS) on Gateway**
+4. **Create and register a child Rollup chain (zkSYS) on Gateway**
 
    ```bash
    # Create the chain
    zkstack chain create \
        --chain-name zksys \
-       --chain-id 57057\
+       --chain-id 57001 \
        --l1-batch-commit-data-generator-mode rollup
 
    # Initialize it against Gateway (uses addresses generated in `chains/gateway/configs/gateway.yaml`)
@@ -50,7 +42,7 @@ layer, and run the node using the new `smart_config` format.
 
    The commands deploy contracts, register the chain in BridgeHub and link it to Gateway.
 
-6. **Adjust the Gateway/zkSYS chain configuration**
+5. **Adjust the Gateway/zkSYS chain configuration**
 
    Edit `chains/gateway/configs/general.yaml` and set
 
@@ -115,7 +107,7 @@ layer, and run the node using the new `smart_config` format.
    Note: Gateway does not emit precommits by default. To keep Gateway from gating commits on precommit finalization,
    leave `precommit_params` unset in Gateway. Enable it on Gateway only if you explicitly want Gateway→L1 precommits.
 
-7. **Run the nodes**
+6. **Run the nodes**
 
    ```bash
    # Gateway node (Validium + Bitcoin DA)
