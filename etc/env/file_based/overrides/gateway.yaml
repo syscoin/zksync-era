@@ -1,4 +1,6 @@
 # SYSCOIN
 eth:
   sender:
-    precommit_params: ~
+    precommit_params:
+      deadline: 5 sec
+      l2_blocks_to_aggregate: 15
