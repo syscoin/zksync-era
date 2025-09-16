@@ -5,7 +5,7 @@ use std::sync::Arc;
 use anyhow::Context;
 use chrono::Utc;
 use ethers::{
-    providers::{Http, Middleware, Provider},
+    providers::{Http, Middleware, Provider, ProviderError},
     types::{Filter, TransactionReceipt},
     utils::keccak256,
 };
@@ -434,19 +434,22 @@ pub(crate) async fn await_for_tx_to_complete(
         "Waiting for transaction with hash {:#?} to complete...",
         hash
     ));
-    while gateway_provider
-        .get_transaction_receipt(hash)
-        .await?
-        .is_none()
-    {
-        tokio::time::sleep(tokio::time::Duration::from_millis(200)).await;
-    }
-
-    // We do not handle network errors
-    let receipt = gateway_provider
-        .get_transaction_receipt(hash)
-        .await?
-        .unwrap();
+    // SYSCOIN
+    let mut backoff_ms: u64 = 1000; // start with 1s
+    let max_backoff_ms: u64 = 5000; // cap at 5s
+    let receipt = loop {
+        match gateway_provider.get_transaction_receipt(hash).await {
+            Ok(Some(receipt)) => break receipt,
+            Ok(None) => {
+                tokio::time::sleep(tokio::time::Duration::from_millis(backoff_ms)).await;
+            }
+            Err(ProviderError::HTTPError(err)) if err.is_connect() || err.is_timeout() => {
+                tokio::time::sleep(tokio::time::Duration::from_millis(backoff_ms)).await;
+                backoff_ms = (backoff_ms.saturating_mul(2)).min(max_backoff_ms);
+            }
+            Err(err) => return Err(anyhow::Error::new(err)),
+        }
+    };
 
     if receipt.status == Some(U64::from(1)) {
         logger::info("Transaction completed successfully!");

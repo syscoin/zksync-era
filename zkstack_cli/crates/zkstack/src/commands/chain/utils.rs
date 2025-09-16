@@ -72,8 +72,12 @@ pub(crate) async fn send_tx(
 
     let spinner = Spinner::new("Waiting for transaction to complete");
 
-    // 5. Await receipt
-    let receipt: TransactionReceipt = pending_tx.await?.context("Receipt not found")?;
+    // SYSCOIN 5. Await receipt with confirmations and a conservative polling interval
+    let receipt: TransactionReceipt = pending_tx
+        .confirmations(1)
+        .interval(std::time::Duration::from_secs(1))
+        .await?
+        .context("Receipt not found")?;
 
     spinner.finish();
 
