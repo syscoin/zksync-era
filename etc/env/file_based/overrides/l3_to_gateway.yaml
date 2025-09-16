@@ -1,0 +1,11 @@
+eth:
+  sender:
+    pubdata_sending_mode: CALLDATA  # Will be converted to RelayedL2Calldata when settling on gateway
+state_keeper:
+  # L3 chains settling on gateway should balance overhead between compute and pubdata
+  # since gateway storage is much cheaper than L1 blobs/calldata
+  compute_overhead_part: 0.5  # Gateway has computational costs for processing L3 batches
+  pubdata_overhead_part: 0.5  # Gateway storage is cheap but not free
+  # These values reflect gateway's cost structure, not L1's cost structure
+  # Can safely use higher limit within circuit constraints
+  max_pubdata_per_batch: 750000  # Safe limit below circuit max of ~761856
