@@ -1,6 +1,9 @@
 eth:
   sender:
     pubdata_sending_mode: CALLDATA  # Will be converted to RelayedL2Calldata when settling on gateway
+    precommit_params:
+      deadline: 5 sec
+      l2_blocks_to_aggregate: 15
 state_keeper:
   # L3 chains settling on gateway should balance overhead between compute and pubdata
   # since gateway storage is much cheaper than L1 blobs/calldata
