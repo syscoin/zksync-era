@@ -64,7 +64,8 @@ pub async fn register_chain(
     let mut forge = Forge::new(&config.path_to_foundry_scripts())
         .script(&REGISTER_CHAIN_SCRIPT_PARAMS.script(), forge_args.clone())
         .with_ffi()
-        .with_rpc_url(l1_rpc_url);
+        .with_rpc_url(l1_rpc_url)
+        .with_timeout(1800); // SYSCOIN 30 minutes timeout for transaction receipts
 
     if broadcast {
         forge = forge.with_broadcast();

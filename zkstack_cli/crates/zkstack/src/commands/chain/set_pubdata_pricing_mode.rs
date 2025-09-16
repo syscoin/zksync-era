@@ -88,7 +88,8 @@ pub async fn set_pubdata_pricing_mode(
         .with_ffi()
         .with_rpc_url(l1_rpc_url)
         .with_broadcast()
-        .with_calldata(&calldata);
+        .with_calldata(&calldata)
+        .with_timeout(1800); // SYSCOIN 30 minutes timeout for transaction receipts
     update_pubdata_pricing_mode(shell, governor, forge).await
 }
 

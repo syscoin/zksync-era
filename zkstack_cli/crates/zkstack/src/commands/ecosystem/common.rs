@@ -85,7 +85,8 @@ pub async fn deploy_ctm(
         .script(&DEPLOY_CTM_SCRIPT_PARAMS.script(), forge_args.clone())
         .with_ffi()
         .with_calldata(&calldata)
-        .with_rpc_url(l1_rpc_url.to_string());
+        .with_rpc_url(l1_rpc_url.to_string())
+        .with_timeout(1800); // SYSCOIN 30 minutes timeout for transaction receipts
 
     if config.l1_network == L1Network::Localhost {
         // It's a kludge for reth, just because it doesn't behave properly with large amount of txs
@@ -157,7 +158,8 @@ pub async fn deploy_l1_core_contracts(
             forge_args.clone(),
         )
         .with_ffi()
-        .with_rpc_url(l1_rpc_url.to_string());
+        .with_rpc_url(l1_rpc_url.to_string())
+        .with_timeout(1800); // SYSCOIN 30 minutes timeout for transaction receipts
 
     if config.l1_network == L1Network::Localhost {
         // It's a kludge for reth, just because it doesn't behave properly with large amount of txs
@@ -215,7 +217,8 @@ pub async fn register_ctm_on_existing_bh(
         .script(&REGISTER_CTM_SCRIPT_PARAMS.script(), forge_args.clone())
         .with_ffi()
         .with_calldata(&calldata)
-        .with_rpc_url(l1_rpc_url.to_string());
+        .with_rpc_url(l1_rpc_url.to_string())
+        .with_timeout(1800); // SYSCOIN 30 minutes timeout for transaction receipts
 
     if config.l1_network == L1Network::Localhost {
         // It's a kludge for reth, just because it doesn't behave properly with large amount of txs
@@ -266,7 +269,8 @@ pub async fn deploy_erc20(
         .script(&DEPLOY_ERC20_SCRIPT_PARAMS.script(), forge_args.clone())
         .with_ffi()
         .with_rpc_url(l1_rpc_url)
-        .with_broadcast();
+        .with_broadcast()
+        .with_timeout(1800); // SYSCOIN 30 minutes timeout for transaction receipts
 
     forge = fill_forge_private_key(
         forge,

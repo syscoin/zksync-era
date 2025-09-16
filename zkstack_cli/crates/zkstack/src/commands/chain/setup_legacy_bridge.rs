@@ -61,7 +61,8 @@ pub async fn setup_legacy_bridge(
         .script(&SETUP_LEGACY_BRIDGE.script(), forge_args.clone())
         .with_ffi()
         .with_rpc_url(secrets.l1_rpc_url()?)
-        .with_broadcast();
+        .with_broadcast()
+        .with_timeout(1800); // SYSCOIN 30 minutes timeout for transaction receipts
 
     forge = fill_forge_private_key(
         forge,

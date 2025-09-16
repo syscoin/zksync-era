@@ -83,7 +83,8 @@ pub async fn accept_admin(
         .with_ffi()
         .with_rpc_url(l1_rpc_url)
         .with_broadcast()
-        .with_calldata(&calldata);
+        .with_calldata(&calldata)
+        .with_timeout(1800); // SYSCOIN 30 minutes timeout for transaction receipts
     accept_ownership(shell, governor, forge).await
 }
 
@@ -111,7 +112,8 @@ pub async fn accept_owner(
         .with_ffi()
         .with_rpc_url(l1_rpc_url)
         .with_broadcast()
-        .with_calldata(&calldata);
+        .with_calldata(&calldata)
+        .with_timeout(1800); // SYSCOIN 30 minutes timeout for transaction receipts
     accept_ownership(shell, governor, forge).await
 }
 
@@ -144,7 +146,8 @@ pub async fn make_permanent_rollup(
         .with_ffi()
         .with_rpc_url(l1_rpc_url)
         .with_broadcast()
-        .with_calldata(&calldata);
+        .with_calldata(&calldata)
+        .with_timeout(1800); // SYSCOIN 30 minutes timeout for transaction receipts
     accept_ownership(shell, governor, forge).await
 }
 
@@ -186,7 +189,8 @@ pub async fn governance_execute_calls(
         )
         .with_ffi()
         .with_rpc_url(l1_rpc_url)
-        .with_calldata(&calldata);
+        .with_calldata(&calldata)
+        .with_timeout(1800); // SYSCOIN 30 minutes timeout for transaction receipts
 
     let description = "executing governance calls";
     let (forge, spinner_text) = match mode {
@@ -237,7 +241,8 @@ pub async fn ecosystem_admin_execute_calls(
         .with_ffi()
         .with_rpc_url(l1_rpc_url)
         .with_broadcast()
-        .with_calldata(&calldata);
+        .with_calldata(&calldata)
+        .with_timeout(1800); // SYSCOIN 30 minutes timeout for transaction receipts
     accept_ownership(shell, ecosystem_admin, forge).await
 }
 
@@ -282,7 +287,8 @@ pub async fn admin_execute_upgrade(
         .with_ffi()
         .with_rpc_url(l1_rpc_url)
         .with_broadcast()
-        .with_calldata(&calldata);
+        .with_calldata(&calldata)
+        .with_timeout(1800); // SYSCOIN 30 minutes timeout for transaction receipts
     accept_ownership(shell, governor, forge).await
 }
 
@@ -327,7 +333,8 @@ pub async fn admin_schedule_upgrade(
         .with_ffi()
         .with_rpc_url(l1_rpc_url)
         .with_broadcast()
-        .with_calldata(&calldata);
+        .with_calldata(&calldata)
+        .with_timeout(1800); // SYSCOIN 30 minutes timeout for transaction receipts
     accept_ownership(shell, governor, forge).await
 }
 
@@ -377,7 +384,8 @@ pub async fn admin_update_validator(
         .with_ffi()
         .with_rpc_url(l1_rpc_url)
         .with_broadcast()
-        .with_calldata(&calldata);
+        .with_calldata(&calldata)
+        .with_timeout(1800); // SYSCOIN 30 minutes timeout for transaction receipts
     accept_ownership(shell, governor, forge).await
 }
 
@@ -445,7 +453,8 @@ pub async fn call_script(
         )
         .with_ffi()
         .with_rpc_url(l1_rpc_url)
-        .with_calldata(&calldata);
+        .with_calldata(&calldata)
+        .with_timeout(1800); // SYSCOIN 30 minutes timeout for transaction receipts
 
     let (forge, spiner_text) = match mode {
         AdminScriptMode::OnlySave => (forge, format!("Preparing calldata for {description}")),

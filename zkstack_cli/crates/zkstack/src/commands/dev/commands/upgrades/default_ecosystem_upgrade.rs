@@ -249,7 +249,8 @@ async fn no_governance_prepare(
         .with_rpc_url(l1_rpc_url)
         .with_slow()
         .with_gas_limit(1_000_000_000_000)
-        .with_broadcast();
+        .with_broadcast()
+        .with_timeout(1800); // SYSCOIN 30 minutes timeout for transaction receipts
 
     forge = fill_forge_private_key(
         forge,
@@ -584,7 +585,8 @@ async fn no_governance_stage_2(
         .with_rpc_url(l1_rpc_url.clone())
         .with_broadcast()
         .with_calldata(&init_chains_calldata)
-        .with_private_key(deployer_private_key);
+        .with_private_key(deployer_private_key)
+        .with_timeout(1800); // SYSCOIN 30 minutes timeout for transaction receipts
 
     forge.run(shell)?;
 
@@ -596,7 +598,8 @@ async fn no_governance_stage_2(
         .with_rpc_url(l1_rpc_url)
         .with_broadcast()
         .with_calldata(&init_tokens_calldata)
-        .with_private_key(deployer_private_key);
+        .with_private_key(deployer_private_key)
+        .with_timeout(1800); // SYSCOIN 30 minutes timeout for transaction receipts
 
     forge.run(shell)?;
 

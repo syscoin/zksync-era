@@ -169,6 +169,12 @@ impl ForgeScript {
         self
     }
 
+    /// SYSCOIN Add the timeout flag to the forge script command.
+    pub fn with_timeout(mut self, timeout: u64) -> Self {
+        self.args.add_arg(ForgeScriptArg::Timeout { timeout });
+        self
+    }
+
     // Do not start the script if balance is not enough
     pub fn private_key(&self) -> Option<LocalWallet> {
         self.args.args.iter().find_map(|a| {
@@ -288,6 +294,11 @@ pub enum ForgeScriptArg {
     #[strum(to_string = "skip={skip_path}")]
     Skip {
         skip_path: String,
+    },
+    /// SYSCOIN
+    #[strum(to_string = "timeout={timeout}")]
+    Timeout {
+        timeout: u64,
     },
 }
 

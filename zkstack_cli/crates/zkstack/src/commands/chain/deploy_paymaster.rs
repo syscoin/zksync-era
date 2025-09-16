@@ -37,7 +37,8 @@ pub async fn deploy_paymaster(
     let mut forge = Forge::new(&foundry_contracts_path)
         .script(&DEPLOY_PAYMASTER_SCRIPT_PARAMS.script(), forge_args.clone())
         .with_ffi()
-        .with_rpc_url(secrets.l1_rpc_url()?);
+        .with_rpc_url(secrets.l1_rpc_url()?)
+        .with_timeout(1800); // SYSCOIN 30 minutes timeout for transaction receipts
 
     if let Some(address) = sender {
         forge = forge.with_sender(address);

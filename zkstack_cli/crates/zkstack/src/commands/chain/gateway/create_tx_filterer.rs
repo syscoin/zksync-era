@@ -101,7 +101,8 @@ pub async fn deploy_gateway_tx_filterer(
                 .encode("runWithInputFromFile", ())
                 .unwrap(),
         )
-        .with_broadcast();
+        .with_broadcast()
+        .with_timeout(1800); // SYSCOIN 30 minutes timeout for transaction receipts
 
     // This script can be run by any wallet without privileges
     forge = fill_forge_private_key(forge, Some(deployer), WalletOwner::Deployer)?;

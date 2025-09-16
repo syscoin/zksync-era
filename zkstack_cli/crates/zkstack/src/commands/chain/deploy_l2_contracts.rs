@@ -310,7 +310,8 @@ async fn call_forge(
             forge_args.clone(),
         )
         .with_ffi()
-        .with_rpc_url(secrets.l1_rpc_url()?);
+        .with_rpc_url(secrets.l1_rpc_url()?)
+        .with_timeout(1800); // SYSCOIN 30 minutes timeout for transaction receipts
     if with_broadcast {
         forge = forge.with_broadcast();
     }

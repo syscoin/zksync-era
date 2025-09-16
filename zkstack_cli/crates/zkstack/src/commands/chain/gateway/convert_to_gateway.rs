@@ -243,7 +243,8 @@ pub async fn gateway_vote_preparation(
             .with_ffi()
             .with_rpc_url(l1_rpc_url)
             .with_calldata(&calldata)
-            .with_broadcast();
+            .with_broadcast()
+            .with_timeout(1800); // SYSCOIN 30 minutes timeout for transaction receipts
 
     // Governor private key is required for this script
     forge = fill_forge_private_key(forge, Some(deployer), WalletOwner::Deployer)?;

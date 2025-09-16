@@ -107,7 +107,8 @@ pub async fn set_token_multiplier_setter(
         .with_ffi()
         .with_rpc_url(l1_rpc_url)
         .with_broadcast()
-        .with_calldata(&calldata);
+        .with_calldata(&calldata)
+        .with_timeout(1800); // SYSCOIN 30 minutes timeout for transaction receipts
     update_token_multiplier_setter(shell, governor, forge).await
 }
 
