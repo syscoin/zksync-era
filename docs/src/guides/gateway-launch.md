@@ -40,11 +40,15 @@ layer, and run the node using the new `smart_config` format.
    zkstack chain create \
        --chain-name zksys \
        --chain-id 57001 \
-       --l1-batch-commit-data-generator-mode rollup \
-       --override l3_to_gateway
+       --l1-batch-commit-data-generator-mode rollup
 
    # Initialize it against Gateway (uses addresses generated in `chains/gateway/configs/gateway.yaml`). Use L1 RPC when it asks for RPC here as well.
    FOUNDRY_EVM_VERSION=shanghai FOUNDRY_CHAIN_ID=5700 zkstack chain init --chain zksys
+   
+   # Apply l3_to_gateway override (recommended for L3 chains settling on gateway)
+   zkstack dev config-writer --path ../etc/env/file_based/overrides/l3_to_gateway.yaml --chain zksys
+   
+   # Migrate the chain to gateway
    FOUNDRY_EVM_VERSION=shanghai FOUNDRY_CHAIN_ID=5700 zkstack chain gateway migrate-to-gateway --chain zksys --gateway-chain-name gateway
    ```
 
