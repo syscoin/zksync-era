@@ -9,7 +9,7 @@ layer, and run the node using the new `smart_config` format.
    zkstack ecosystem create
    ```
 
-2. **Init the Gateway ecosystem with Bitcoin DA (tanenbaum=5700, mainnet=57)**
+2. **Init the Gateway ecosystem with Bitcoin DA (tanenbaum=5700, mainnet=57). Use L1 RPC when it asks.**
 
    ```bash
    cd gateway
@@ -33,10 +33,9 @@ layer, and run the node using the new `smart_config` format.
        --chain-id 57001 \
        --l1-batch-commit-data-generator-mode rollup
 
-   # Initialize it against Gateway (uses addresses generated in `chains/gateway/configs/gateway.yaml`)
-   FOUNDRY_EVM_VERSION=shanghai FOUNDRY_CHAIN_ID=5700 zkstack chain init \
-       --chain zksys \
-       --gateway-config-path ./chains/gateway/configs/gateway.yaml
+   # Initialize it against Gateway (uses addresses generated in `chains/gateway/configs/gateway.yaml`). Use L1 RPC when it asks for RPC here as well.
+   FOUNDRY_EVM_VERSION=shanghai FOUNDRY_CHAIN_ID=5700 zkstack chain init --chain zksys 
+   FOUNDRY_EVM_VERSION=shanghai FOUNDRY_CHAIN_ID=5700 zkstack chain gateway migrate-to-gateway --chain zksys --gateway-chain-name gateway
    ```
 
    The commands deploy contracts, register the chain in BridgeHub and link it to Gateway.
