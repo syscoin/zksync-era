@@ -22,6 +22,15 @@ layer, and run the node using the new `smart_config` format.
    ```bash
    FOUNDRY_EVM_VERSION=shanghai FOUNDRY_CHAIN_ID=5700 zkstack chain gateway create-tx-filterer --chain gateway
    FOUNDRY_EVM_VERSION=shanghai FOUNDRY_CHAIN_ID=5700 zkstack chain gateway convert-to-gateway --chain gateway
+
+   # Apply gateway override
+   zkstack dev config-writer --path ../etc/env/file_based/overrides/gateway.yaml --chain gateway
+
+   # Apply network override (for testnet)
+   zkstack dev config-writer --path ../etc/env/file_based/overrides/testnet.yaml --chain gateway
+
+   # OR For mainnet:
+   zkstack dev config-writer --path ../etc/env/file_based/overrides/mainnet.yaml --chain gateway
    ```
 
 4. **Create and register a child Rollup chain (zkSYS) on Gateway**
@@ -42,13 +51,6 @@ layer, and run the node using the new `smart_config` format.
    The commands deploy contracts, register the chain in BridgeHub and link it to Gateway.
 
 5. **Adjust the Gateway/zkSYS chain configuration**
-
-   Edit `chains/gateway/configs/general.yaml` and set
-
-   ```yaml
-   state_keeper:
-     max_pubdata_per_batch: 750_000
-   ```
 
    Add the DA client configuration for Syscoin PoDA:
 
@@ -81,30 +83,6 @@ layer, and run the node using the new `smart_config` format.
    ```
 
    For more details, see the [Bitcoin DA smart_config](./bitcoin-da-client.md#smart_config-example).
-
-   Optional: zkSYS precommit (fast interop)
-
-   If you want the edge chain (e.g., `zkSYS`) to post precommits to Gateway for faster interop checks, add the following
-   to the edge chain config (not Gateway):
-
-   ```yaml
-   # chains/zksys/configs/general.yaml
-   eth:
-     sender:
-       precommit_params:
-         l2_blocks_to_aggregate: 15 # ~30s at 2s/miniblock
-         deadline: 30 sec # OR condition with the block span
-   ```
-
-   Alternatively via env vars for the zkSYS node process:
-
-   ```bash
-   export ETH_SENDER_SENDER_PRECOMMIT_PARAMS_L2_BLOCKS_TO_AGGREGATE=15
-   export ETH_SENDER_SENDER_PRECOMMIT_PARAMS_DEADLINE="30 sec"
-   ```
-
-   Note: Gateway does not emit precommits by default. To keep Gateway from gating commits on precommit finalization,
-   leave `precommit_params` unset in Gateway. Enable it on Gateway only if you explicitly want Gateway→L1 precommits.
 
 6. **Run the nodes**
 
