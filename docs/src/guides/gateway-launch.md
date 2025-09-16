@@ -3,7 +3,6 @@
 This tutorial shows how to deploy Gateway contracts, create the first chain using Bitcoin as the data availability
 layer, and run the node using the new `smart_config` format.
 
-
 1. **Create the Gateway ecosystem (call it 'gateway' and use chain-id 57057) in Validium mode**
 
    ```bash
@@ -21,8 +20,8 @@ layer, and run the node using the new `smart_config` format.
 3. **Convert the chain to a Gateway settlement layer**
 
    ```bash
-   zkstack chain gateway create-tx-filterer --chain gateway
-   zkstack chain gateway convert-to-gateway --chain gateway
+   FOUNDRY_EVM_VERSION=shanghai FOUNDRY_CHAIN_ID=5700 zkstack chain gateway create-tx-filterer --chain gateway
+   FOUNDRY_EVM_VERSION=shanghai FOUNDRY_CHAIN_ID=5700 zkstack chain gateway convert-to-gateway --chain gateway
    ```
 
 4. **Create and register a child Rollup chain (zkSYS) on Gateway**
@@ -35,7 +34,7 @@ layer, and run the node using the new `smart_config` format.
        --l1-batch-commit-data-generator-mode rollup
 
    # Initialize it against Gateway (uses addresses generated in `chains/gateway/configs/gateway.yaml`)
-   zkstack chain init \
+   FOUNDRY_EVM_VERSION=shanghai FOUNDRY_CHAIN_ID=5700 zkstack chain init \
        --chain zksys \
        --gateway-config-path ./chains/gateway/configs/gateway.yaml
    ```
