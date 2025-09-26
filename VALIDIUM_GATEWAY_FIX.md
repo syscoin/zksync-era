@@ -1,9 +1,12 @@
 # Fix for Validium Gateway Settlement Issue
 
 ## Problem Summary
-When a gateway is running in **Validium mode**, chains trying to settle on it fail with the error: **"gas per pub data limit is zero"**
+
+When a gateway is running in **Validium mode**, chains trying to settle on it fail with the error: **"gas per pub data
+limit is zero"**
 
 This affects both:
+
 - Rollup ZK chains settling on a Validium Gateway ❌
 - Validium ZK chains settling on a Validium Gateway ❌
 
@@ -17,6 +20,7 @@ The issue occurs because:
 4. Transaction validation fails with "gas per pub data limit is zero" error
 
 ### Code Path:
+
 1. `estimate_effective_pubdata_price()` returns 0 for `PubdataSendingMode::Custom` (Validium)
 2. `cap_pubdata_fee()` also returns 0 for `L1BatchCommitmentMode::Validium`
 3. This causes the gateway's blocks to have `fair_pubdata_price = 0`
@@ -27,6 +31,7 @@ The issue occurs because:
 Modified two functions in `/core/node/fee_model/src/l1_gas_price/gas_adjuster/mod.rs`:
 
 ### 1. Fixed `estimate_effective_pubdata_price()`:
+
 ```rust
 PubdataSendingMode::Custom => {
     // For Validium/Custom DA, we need to return a minimum gas per pubdata price
@@ -40,6 +45,7 @@ PubdataSendingMode::Custom => {
 ```
 
 ### 2. Fixed `cap_pubdata_fee()`:
+
 ```rust
 L1BatchCommitmentMode::Validium => {
     // For Validium mode, we still need to return the pubdata fee
@@ -56,6 +62,7 @@ L1BatchCommitmentMode::Validium => {
 ## Impact
 
 After this fix:
+
 - Validium gateways will report a minimum `pubdata_price` of 800 (REQUIRED_L2_GAS_PRICE_PER_PUBDATA)
 - Chains settling on Validium gateways will calculate valid `gas_per_pubdata` values
 - Both Rollup and Validium chains can successfully settle on Validium gateways
@@ -65,11 +72,12 @@ After this fix:
 While this fix addresses the immediate issue, there may be other edge cases when using Validium gateways:
 
 1. **Configuration**: Validium gateways should properly configure:
+
    - `pubdata_overhead_part = 0.0` (no pubdata overhead)
    - `compute_overhead_part = 1.0` (all overhead from compute)
    - `sender_pubdata_sending_mode = "Custom"`
 
-2. **Future Improvements**: 
+2. **Future Improvements**:
    - Consider making the minimum pubdata price configurable
    - Add better support for custom DA pricing models
    - Improve documentation for Validium gateway setup
@@ -78,4 +86,5 @@ While this fix addresses the immediate issue, there may be other edge cases when
 
 - `/core/node/fee_model/src/l1_gas_price/gas_adjuster/mod.rs` - Fixed pubdata pricing logic
 
-This fix ensures that Validium gateways can be used as settlement layers without breaking the gas calculation logic for settling chains.
+This fix ensures that Validium gateways can be used as settlement layers without breaking the gas calculation logic for
+settling chains.
