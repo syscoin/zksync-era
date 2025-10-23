@@ -7,7 +7,7 @@ bootloader_hash: 0x01000911c4db4fe62c98e180cfa7e9b3a22fb15f505905d4bf36192f48155
 default_aa_hash: 0x010004e9886ef67b24d0f0fbbb5a536d105ce901f13b69abc165e7d8749933ce
 evm_emulator_hash: 0x01000d8bae37b82f311186426184866498b357f41d7a02ced11f3e3fbfbacd63
 l1_chain_id: 5700
-l2_chain_id: 57057
+l2_chain_id: 57001
 fee_account: '0x0000000000000000000000000000000000000001'
 l1_batch_commit_data_generator_mode: Validium
 prover:
