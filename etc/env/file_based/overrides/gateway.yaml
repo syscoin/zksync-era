@@ -1,4 +1,10 @@
 # SYSCOIN
 eth:
   sender:
-    precommit_params: ~
+    precommit_params:
+      # This number has been decided as precommit takes on average 20 mins to get into
+      # finalized state and the commit to be sent (based on obersavations on Tanenbaum).
+      # With low number of blocks generation, 15 blocks aggregation is okay. However, this
+      # number can be tuned based on the network conditions.
+      deadline: 1200 sec
+      l2_blocks_to_aggregate: 15

@@ -39,18 +39,23 @@ layer, and run the node using the new `smart_config` format.
    # Create the chain
    zkstack chain create \
        --chain-name zksys \
-       --chain-id 57001 \
+       --chain-id 57057 \
        --l1-batch-commit-data-generator-mode rollup \
        --override l3_to_gateway
 
-   # Initialize it against Gateway (uses addresses generated in `chains/gateway/configs/gateway.yaml`). Use L1 RPC when it asks for RPC here as well.
-   FOUNDRY_EVM_VERSION=shanghai FOUNDRY_CHAIN_ID=5700 zkstack chain init --chain zksys
+   # Initialize it against L1. Use L1 RPC when it asks for RPC here as well.
+   # This creates a chain without creating priority txs immediately.
+   FOUNDRY_EVM_VERSION=shanghai FOUNDRY_CHAIN_ID=5700 zkstack chain init --chain zksys --skip-priority-txs
+
+   # Migrate the chain to gateway. At this stage PQ is indeed empty before starting the migration process
+   # Skips the `set_da_validator_pair_via_gateway` call if the priority txs were skipped. Note that this step is not skipped when a chain migrates back to gateway, as the contract must have already been deployed.
+   FOUNDRY_EVM_VERSION=shanghai FOUNDRY_CHAIN_ID=5700 zkstack chain gateway migrate-to-gateway --chain zksys --gateway-chain-name gateway -v
+
+   # Finalize the migration of the chain on gateway that sends the skipped priority txs and later calls `set_da_validator_pair_via_gateway`.
+   FOUNDRY_EVM_VERSION=shanghai FOUNDRY_CHAIN_ID=5700 zkstack chain gateway finalize-chain-migration-to-gateway --chain zksys --gateway-chain-name gateway
 
    # Apply l3_to_gateway override (recommended for L3 chains settling on gateway)
    zkstack dev config-writer --path ../etc/env/file_based/overrides/l3_to_gateway.yaml --chain zksys
-
-   # Migrate the chain to gateway
-   FOUNDRY_EVM_VERSION=shanghai FOUNDRY_CHAIN_ID=5700 zkstack chain gateway migrate-to-gateway --chain zksys --gateway-chain-name gateway
    ```
 
    The commands deploy contracts, register the chain in BridgeHub and link it to Gateway.
@@ -62,7 +67,7 @@ layer, and run the node using the new `smart_config` format.
    ```yaml
    da_client:
      client: Bitcoin
-     api_node_url: http://localhost:8369 # Syscoin NEVM RPC/API node
+     api_node_url: http://localhost:8370 # Syscoin NEVM RPC/API node
      poda_url: https://poda.syscoin.org # PoDA endpoint (or your own)
    ```
 
@@ -70,7 +75,7 @@ layer, and run the node using the new `smart_config` format.
 
    ```yaml
    l1:
-     gateway_rpc_url: http://127.0.0.1:4050/ # Gateway chain RPC (your Gateway node)
+     gateway_rpc_url: http://127.0.0.1:3050/ # Gateway chain RPC (your Gateway node)
 
    da_client:
      rpc_user: YOUR_SYSCOIN_RPC_USER
@@ -81,10 +86,10 @@ layer, and run the node using the new `smart_config` format.
 
    ```bash
    # Gateway server (settlement layer)
-   export L1_GATEWAY_WEB3_URL="http://127.0.0.1:4050/"
+   export L1_GATEWAY_WEB3_URL="http://127.0.0.1:3050/"
 
    # External node for Gateway
-   export EN_GATEWAY_URL="http://127.0.0.1:4050/"
+   export EN_GATEWAY_URL="http://127.0.0.1:3050/"
    ```
 
    For more details, see the [Bitcoin DA smart_config](./bitcoin-da-client.md#smart_config-example).
