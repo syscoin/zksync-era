@@ -155,7 +155,8 @@ pub(crate) async fn get_migrate_to_gateway_context(
         gateway_rpc_url: gw_rpc_url.clone(),
         new_sl_da_validator: gateway_da_validator_address,
         validator: chain_secrets_config.operator.address,
-        min_validator_balance: U256::from(10).pow(19.into()),
+        // Syscoin: this has been reduced to 1 SYS so that less tokens are required during migration
+        min_validator_balance: U256::from(10).pow(18.into()),
         refund_recipient: None,
     };
 
