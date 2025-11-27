@@ -2,9 +2,15 @@
 eth:
   sender:
     precommit_params:
-      # This number has been decided as precommit takes on average 20 mins to get into
-      # finalized state and the commit to be sent (based on obersavations on Tanenbaum).
-      # With low number of blocks generation, 15 blocks aggregation is okay. However, this
-      # number can be tuned based on the network conditions.
-      deadline: 1200 sec
+      # This number for precommit is set as 600 sec (10 mins) for pre-commit txs to be sent to L1.
+      # This amounts to max of 144 txs to L1 in a day (assuming 1 precommit every 10 mins).
+      # With low number of blocks generation, 15 blocks aggregation is okay.
+      # However, these numbers can be tuned based on the network conditions.
+      deadline: 600 sec
       l2_blocks_to_aggregate: 15
+state_keeper:
+  # Gateway-specific settings for L3 chains settling on gateway -
+  # batch sealing time: 40 mins
+  # block sealing time: 10 secs
+  block_commit_deadline_ms: 2400000
+  miniblock_commit_deadline_ms: 10000
