@@ -286,6 +286,7 @@ pub(crate) async fn get_l1_da_validator(chain_config: &ChainConfig) -> anyhow::R
             match general_config.da_client_type().as_deref() {
                 Some("Avail") => contracts_config.l1.avail_l1_da_validator_addr,
                 // SYSCOIN
+                //
                 Some(s) if s.eq_ignore_ascii_case("bitcoin") => {
                     contracts_config.l1.rollup_l1_da_validator_addr
                 }

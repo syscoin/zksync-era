@@ -77,6 +77,11 @@ pub(crate) struct MigrateToGatewayConfig {
     pub(crate) validator: Address,
     pub(crate) min_validator_balance: U256,
     pub(crate) refund_recipient: Option<Address>,
+    /// Syscoin
+    /// Optional: specify a different L2 DA validator for the migration.
+    /// If None, the existing L2 DA validator from L1 will be preserved.
+    /// Use this when changing DA modes (e.g., Validium -> Rollup).
+    pub(crate) target_l2_da_validator: Option<Address>,
 }
 
 #[derive(Debug)]
@@ -101,6 +106,8 @@ pub(crate) struct MigrateToGatewayContext {
     pub(crate) chain_admin_address: Address,
     pub(crate) zk_chain_gw_address: Address,
     pub(crate) refund_recipient: Address,
+    /// Syscoin
+    pub(crate) target_l2_da_validator: Option<Address>,
 }
 
 impl MigrateToGatewayConfig {
@@ -226,6 +233,8 @@ impl MigrateToGatewayConfig {
             chain_admin_address,
             zk_chain_gw_address,
             refund_recipient,
+            // Syscoin
+            target_l2_da_validator: self.target_l2_da_validator,
         })
     }
 }
@@ -255,8 +264,17 @@ pub(crate) async fn get_migrate_to_gateway_calls(
 
     result.extend(finalize_migrate_to_gateway_output.calls);
 
-    // Changing L2 DA validator while migrating to gateway is not recommended; we allow changing only the settlement layer one
-    let (_, l2_da_validator) = context.l1_zk_chain.get_da_validator_pair().await?;
+    // Syscoin
+    // Determine which L2 DA validator to use:
+    // 1. If target_l2_da_validator is specified in config, use that (allows mode change)
+    // 2. Otherwise, preserve the existing L2 DA validator from L1
+    let l2_da_validator = if let Some(target_validator) = context.target_l2_da_validator {
+        target_validator
+    } else {
+        let (_, existing_l2_validator) = context.l1_zk_chain.get_da_validator_pair().await?;
+        existing_l2_validator
+    };
+
     if !l2_da_validator.is_zero() {
         let da_validator_encoding_result = check_permanent_rollup_and_set_da_validator_via_gateway(
             shell,
@@ -418,6 +436,13 @@ pub struct MigrateToGatewayCalldataArgs {
     /// isn't strictly ready for final calls.
     #[clap(long, default_missing_value = "true")]
     pub no_cross_check: Option<bool>,
+
+    /// Syscoin
+    /// Optional: specify a different L2 DA validator for the migration.
+    /// If not provided, the existing L2 DA validator from L1 will be preserved.
+    /// Use this when changing DA modes (e.g., Validium -> Rollup).
+    #[clap(long)]
+    pub target_l2_da_validator: Option<Address>,
 }
 
 impl MigrateToGatewayCalldataArgs {
@@ -435,6 +460,7 @@ impl MigrateToGatewayCalldataArgs {
             validator: self.validator,
             min_validator_balance: self.min_validator_balance.into(),
             refund_recipient: self.refund_recipient,
+            target_l2_da_validator: self.target_l2_da_validator,
         }
     }
 }

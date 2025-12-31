@@ -65,7 +65,8 @@ impl EthTxManager {
         // Skip blob fee checks if using Custom pubdata (Validium/DA). For DA (e.g., Bitcoin),
         // blob transactions are not used for commit, so blob fee checks are irrelevant.
         let skip_blob_fee_checks =
-            config.pubdata_sending_mode == zksync_types::pubdata_da::PubdataSendingMode::Custom;
+            config.pubdata_sending_mode == zksync_types::pubdata_da::PubdataSendingMode::Custom
+            || config.pubdata_sending_mode == zksync_types::pubdata_da::PubdataSendingMode::Calldata;
 
         let fees_oracle = GasAdjusterFeesOracle {
             gas_adjuster,
