@@ -31,9 +31,9 @@ Before deploying contracts, fund the wallets listed in:
 - `chains/gateway/configs/wallets.yaml`
 - `chains/zksys/configs/wallets.yaml`
 
-At a minimum, the `deployer` and `governor` wallets should have enough SYS to cover
-deployment and migration transactions. The CLI recommends ~5 SYS for contract
-deployment on public networks; plan for at least that in the deployer wallet.
+At a minimum, the `deployer` and `governor` wallets should have enough SYS to cover deployment and migration
+transactions. The CLI recommends ~5 SYS for contract deployment on public networks; plan for at least that in the
+deployer wallet.
 
 Suggested funding (from the Syscoin deployment README):
 
@@ -75,6 +75,9 @@ Suggested funding (from the Syscoin deployment README):
    ```bash
    export L1_RPC_URL=http://localhost:8545 # Syscoin L1 RPC
    cd gateway
+   # Update token_weth_address in configs/initial_deployments.yaml before deploying.
+   # Tanenbaum: 0xa66b2E50c2b805F31712beA422D0D9e7D0Fd0F35
+   # Mainnet:   0xd3e822f3ef011Ca5f17D82C956D952D8d7C3A1BB
    zkstack dev clean all
    zkstack dev contracts
    FOUNDRY_EVM_VERSION=shanghai FOUNDRY_CHAIN_ID=5700 zkstack ecosystem init \
