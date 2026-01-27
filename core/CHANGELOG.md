@@ -1,5 +1,32 @@
 # Changelog
 
+## [29.8.0](https://github.com/matter-labs/zksync-era/compare/core-v29.7.1...core-v29.8.0) (2026-01-23)
+
+
+### Features
+
+* Update crypto dependencies ([#4618](https://github.com/matter-labs/zksync-era/issues/4618)) ([1524b9b](https://github.com/matter-labs/zksync-era/commit/1524b9ba3437106c752f09cc0739876a01e38b77))
+
+
+### Bug Fixes
+
+* **gateway_migration:** Add wait for starting migration ([#4613](https://github.com/matter-labs/zksync-era/issues/4613)) ([31564c2](https://github.com/matter-labs/zksync-era/commit/31564c286942a514e8c71cfb143064f7225c03b2))
+
+## [29.7.1](https://github.com/matter-labs/zksync-era/compare/core-v29.7.0...core-v29.7.1) (2026-01-09)
+
+
+### Bug Fixes
+
+* **avail-client:** add GasRelay timeout and Referer header ([#4588](https://github.com/matter-labs/zksync-era/issues/4588)) ([3c97623](https://github.com/matter-labs/zksync-era/commit/3c976234e580631f8fae980cc7552462df30c8c8))
+* set User-Agent header for coingecko requests ([#4604](https://github.com/matter-labs/zksync-era/issues/4604)) ([bbc6bd0](https://github.com/matter-labs/zksync-era/commit/bbc6bd03318e07ac0c77f05af2dee43dc9d6ba6a))
+
+## [29.7.0](https://github.com/matter-labs/zksync-era/compare/core-v29.6.0...core-v29.7.0) (2025-11-28)
+
+
+### Features
+
+* add metrics for sendRawTransactionSync ([#4576](https://github.com/matter-labs/zksync-era/issues/4576)) ([b8b6683](https://github.com/matter-labs/zksync-era/commit/b8b668386209f79146d80568567e5bf8526a954a))
+
 ## [29.6.0](https://github.com/matter-labs/zksync-era/compare/core-v29.5.0...core-v29.6.0) (2025-11-17)
 
 
