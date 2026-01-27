@@ -4,7 +4,7 @@ This tutorial shows how to deploy Gateway contracts, create the first chain usin
 layer, and run the node using the new `smart_config` format.
 
 ## Prerequisites
-
+- Run `zkstack dev clean all`
 - Install dependencies from `docs/src/guides/setup-dev.md`.
 - Clone the repo and init submodules:
   ```bash
@@ -78,7 +78,6 @@ Suggested funding (from the Syscoin deployment README):
    # Update token_weth_address in configs/initial_deployments.yaml before deploying.
    # Tanenbaum: 0xa66b2E50c2b805F31712beA422D0D9e7D0Fd0F35
    # Mainnet:   0xd3e822f3ef011Ca5f17D82C956D952D8d7C3A1BB
-   zkstack dev clean all
    zkstack dev contracts
    FOUNDRY_EVM_VERSION=shanghai FOUNDRY_CHAIN_ID=5700 zkstack ecosystem init \
      --update-submodules true \
