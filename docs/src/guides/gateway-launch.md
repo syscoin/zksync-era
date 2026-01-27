@@ -4,6 +4,7 @@ This tutorial shows how to deploy Gateway contracts, create the first chain usin
 layer, and run the node using the new `smart_config` format.
 
 ## Prerequisites
+
 - Run `zkstack dev clean all`
 - Install dependencies from `docs/src/guides/setup-dev.md`.
 - Clone the repo and init submodules:
