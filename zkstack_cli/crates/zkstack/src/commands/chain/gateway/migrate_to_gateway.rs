@@ -145,7 +145,7 @@ pub(crate) async fn get_migrate_to_gateway_context(
 
     // Syscoin
     // If target_migration_l2_da_validator_addr is set, use it (for changing DA mode during migration)
-    // Otherqwise, changing DA mode after migration is going to be manual and tedious process
+    // Otherqwise, changing DA mode after migration is going to be manual
     let target_l2_da_validator = chain_contracts_config.l2.target_migration_l2_da_validator_addr;
     if let Some(target_addr) = target_l2_da_validator {
         logger::warn(format!(
