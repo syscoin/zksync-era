@@ -80,7 +80,7 @@ pub(crate) struct MigrateToGatewayConfig {
     /// Syscoin
     /// Optional: specify a different L2 DA validator for the migration.
     /// If None, the existing L2 DA validator from L1 will be preserved.
-    /// Use this when changing DA modes (e.g., Validium -> Rollup).
+    /// Use this when changing DA modes (e.g., BitcoinDA -> Calldata).
     pub(crate) target_l2_da_validator: Option<Address>,
 }
 
@@ -266,7 +266,7 @@ pub(crate) async fn get_migrate_to_gateway_calls(
 
     // Syscoin
     // Determine which L2 DA validator to use:
-    // 1. If target_l2_da_validator is specified in config, use that (allows mode change)
+    // 1. If target_l2_da_validator is specified in config, use that (allows DA mode change)
     // 2. Otherwise, preserve the existing L2 DA validator from L1
     let l2_da_validator = if let Some(target_validator) = context.target_l2_da_validator {
         target_validator

@@ -62,8 +62,8 @@ impl EthTxManager {
             } else {
                 config.time_in_mempool_in_l1_blocks_cap
             };
-        // Skip blob fee checks if using Custom pubdata (Validium/DA). For DA (e.g., Bitcoin),
-        // blob transactions are not used for commit, so blob fee checks are irrelevant.
+        // Skip blob fee checks if using Custom pubdata (Validium/DA) or Calldata. For Calldata and 
+        // DA (e.g., Bitcoin), blob transactions are not used for commit, so blob fee checks are irrelevant.
         let skip_blob_fee_checks =
             config.pubdata_sending_mode == zksync_types::pubdata_da::PubdataSendingMode::Custom
             || config.pubdata_sending_mode == zksync_types::pubdata_da::PubdataSendingMode::Calldata;

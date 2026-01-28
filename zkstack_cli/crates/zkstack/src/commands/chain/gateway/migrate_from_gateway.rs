@@ -215,7 +215,7 @@ pub async fn run(args: MigrateFromGatewayArgs, shell: &Shell) -> anyhow::Result<
     Ok(())
 }
 
-const LOOK_WAITING_TIME_MS: u64 = 7200000; // SYSCOIN takes time - set to safe timeout of 2 hours
+const LOOK_WAITING_TIME_MS: u64 = 300000; // SYSCOIN takes time for finalization - set interval to 5*60 seconds
 
 pub(crate) async fn check_whether_gw_transaction_is_finalized(
     gateway_provider: &Client<L2>,
