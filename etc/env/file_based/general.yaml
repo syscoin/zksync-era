@@ -85,8 +85,8 @@ circuit_breaker:
   http_req_retry_interval_sec: 2
 eth:
   sender:
-    tx_poll_period: 300 ms
-    aggregate_tx_poll_period: 300 ms
+    tx_poll_period: 30 s
+    aggregate_tx_poll_period: 30 s
     max_txs_in_flight: 190
     proof_sending_mode: SKIP_EVERY_PROOF
     max_aggregated_blocks_to_commit: 1
@@ -187,7 +187,7 @@ prover_job_monitor:
 
 base_token_adjuster:
   price_polling_interval_ms: 30000
-  price_cache_update_interval_ms: 2000
+  price_cache_update_interval_ms: 20000
   max_tx_gas: 80000
   default_priority_fee_per_gas: 1000000
 external_price_api_client:
