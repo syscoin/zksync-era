@@ -5,7 +5,10 @@ use clap::{Parser, Subcommand};
 use tokio::runtime::Runtime;
 use zksync_config::{
     cli::ConfigArgs,
-    configs::{wallets::Wallets, ContractsConfig, GeneralConfig, GenesisConfigWrapper, Secrets},
+    configs::{
+        wallets::Wallets, ContractsConfig, DAClientConfig, GeneralConfig, GenesisConfigWrapper,
+        Secrets,
+    },
     full_config_schema,
     sources::ConfigFilePaths,
 };
@@ -69,6 +72,18 @@ struct Cli {
 #[derive(Debug, Clone)]
 struct ComponentsToRun(Vec<Component>);
 
+// SYSCOIN
+fn da_client_env_value(da_client: &DAClientConfig) -> &'static str {
+    match da_client {
+        DAClientConfig::Avail(_) => "Avail",
+        DAClientConfig::Celestia(_) => "Celestia",
+        DAClientConfig::Eigen(_) => "Eigen",
+        DAClientConfig::Bitcoin(_) => "Bitcoin",
+        DAClientConfig::ObjectStore(_) => "ObjectStore",
+        DAClientConfig::NoDA => "NoDA",
+    }
+}
+
 impl FromStr for ComponentsToRun {
     type Err = String;
 
@@ -118,6 +133,11 @@ fn main() -> anyhow::Result<()> {
     let wallets: Wallets = repo.parse()?;
     let secrets: Secrets = repo.parse()?;
     let contracts_config: ContractsConfig = repo.parse()?;
+    // SYSCOIN
+    if let Some(da_client) = configs.da_client_config.as_ref() {
+        // Keep legacy env-based checks aligned with parsed config.
+        std::env::set_var("DA_CLIENT", da_client_env_value(da_client));
+    }
     let genesis = repo
         .parse::<GenesisConfigWrapper>()?
         .genesis

@@ -6,6 +6,7 @@ use node_builder::ExternalNodeBuilder;
 use smart_config::Prefixed;
 use zksync_config::{
     cli::ConfigArgs,
+    DAClientConfig,
     sources::{ConfigFilePaths, ConfigSources},
 };
 use zksync_types::L1BatchNumber;
@@ -133,6 +134,18 @@ impl Component {
 #[derive(Debug, Clone)]
 struct ComponentsToRun(HashSet<Component>);
 
+// SYSCOIN
+fn da_client_env_value(da_client: &DAClientConfig) -> &'static str {
+    match da_client {
+        DAClientConfig::Avail(_) => "Avail",
+        DAClientConfig::Celestia(_) => "Celestia",
+        DAClientConfig::Eigen(_) => "Eigen",
+        DAClientConfig::Bitcoin(_) => "Bitcoin",
+        DAClientConfig::ObjectStore(_) => "ObjectStore",
+        DAClientConfig::NoDA => "NoDA",
+    }
+}
+
 impl FromStr for ComponentsToRun {
     type Err = anyhow::Error;
 
@@ -187,6 +200,11 @@ fn main() -> anyhow::Result<()> {
     }
 
     let config = ExternalNodeConfig::new(repo, opt.enable_consensus)?;
+    // SYSCOIN
+    if let Some(da_client) = config.local.da_client.as_ref() {
+        // Keep legacy env-based checks aligned with parsed config.
+        env::set_var("DA_CLIENT", da_client_env_value(da_client));
+    }
 
     if let Some(l1_batch) = revert_to_l1_batch {
         let node = ExternalNodeBuilder::on_runtime(runtime, config).build_for_revert(l1_batch)?;
