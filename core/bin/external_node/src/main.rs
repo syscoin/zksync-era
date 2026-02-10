@@ -6,8 +6,8 @@ use node_builder::ExternalNodeBuilder;
 use smart_config::Prefixed;
 use zksync_config::{
     cli::ConfigArgs,
-    DAClientConfig,
     sources::{ConfigFilePaths, ConfigSources},
+    DAClientConfig,
 };
 use zksync_types::L1BatchNumber;
 
