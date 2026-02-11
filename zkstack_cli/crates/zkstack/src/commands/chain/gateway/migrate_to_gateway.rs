@@ -143,6 +143,18 @@ pub(crate) async fn get_migrate_to_gateway_context(
     };
     let chain_secrets_config = chain_config.get_wallets_config().unwrap();
 
+    // Syscoin
+    // If target_migration_l2_da_validator_addr is set, use it (for changing DA mode during migration)
+    // Otherqwise, changing DA mode after migration is going to be manual
+    let target_l2_da_validator = chain_contracts_config.l2.target_migration_l2_da_validator_addr;
+    if let Some(target_addr) = target_l2_da_validator {
+        logger::warn(format!(
+            "Migration will change L2 DA validator: {:#x}\n\
+             Ensure genesis.yaml commitment mode matches the target validator type.",
+            target_addr
+        ));
+    }
+
     let config = MigrateToGatewayConfig {
         l1_rpc_url: l1_url.clone(),
         l1_bridgehub_addr: chain_contracts_config
@@ -155,9 +167,10 @@ pub(crate) async fn get_migrate_to_gateway_context(
         gateway_rpc_url: gw_rpc_url.clone(),
         new_sl_da_validator: gateway_da_validator_address,
         validator: chain_secrets_config.operator.address,
-        // Syscoin: this has been reduced to 1 SYS so that less tokens are required during migration
+        // Syscoin: this has been reduced to 1 SYS which is sufficient for operator balance on Gateway
         min_validator_balance: U256::from(10).pow(18.into()),
         refund_recipient: None,
+        target_l2_da_validator,
     };
 
     if skip_pre_migration_checks {

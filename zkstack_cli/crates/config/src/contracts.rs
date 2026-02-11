@@ -557,6 +557,13 @@ pub struct L2Contracts {
     // `Option` to be able to parse configs from pre-gateway protocol version.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub da_validator_addr: Option<Address>,
+    // Syscoin
+    // `Option` to specify target L2 DA validator for pending migration.
+    // If set, this will be used during migration instead of da_validator_addr.
+    // This allows safe mode changes (e.g., Validium <-> Rollup) without disrupting current operations.
+    // Should be removed after successful migration completion.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub target_migration_l2_da_validator_addr: Option<Address>,
     // `Option` to be able to parse configs from pre-gateway protocol version.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub l2_native_token_vault_proxy_addr: Option<Address>,
