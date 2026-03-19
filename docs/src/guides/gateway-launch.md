@@ -117,14 +117,14 @@ Suggested funding (from the Syscoin deployment README):
    FOUNDRY_EVM_VERSION=shanghai FOUNDRY_CHAIN_ID=5700 zkstack chain gateway create-tx-filterer --chain gateway
    FOUNDRY_EVM_VERSION=shanghai FOUNDRY_CHAIN_ID=5700 zkstack chain gateway convert-to-gateway --chain gateway
 
-   # Apply gateway override
-   zkstack dev config-writer --path ../etc/env/file_based/overrides/gateway.yaml --chain gateway
-
    # Apply network override (for testnet)
    zkstack dev config-writer --path ../etc/env/file_based/overrides/testnet.yaml --chain gateway
 
    # OR For mainnet:
    zkstack dev config-writer --path ../etc/env/file_based/overrides/mainnet.yaml --chain gateway
+
+   # Re-apply gateway override last so gateway-specific timing and precommit settings win.
+   zkstack dev config-writer --path ../etc/env/file_based/overrides/gateway.yaml --chain gateway
    ```
 
 5. **Create and register a child Rollup chain (zkSYS) on Gateway**
@@ -172,7 +172,13 @@ Suggested funding (from the Syscoin deployment README):
    # Finalize the migration of the chain on gateway that sends the skipped priority txs and later calls `set_da_validator_pair_via_gateway`.
    FOUNDRY_EVM_VERSION=shanghai FOUNDRY_CHAIN_ID=5700 zkstack chain gateway finalize-chain-migration-to-gateway --chain zksys --gateway-chain-name gateway
 
-   # Apply l3_to_gateway override (recommended for L3 chains settling on gateway)
+   # Apply network override to the child chain as well.
+   zkstack dev config-writer --path ../etc/env/file_based/overrides/testnet.yaml --chain zksys
+
+   # OR For mainnet:
+   zkstack dev config-writer --path ../etc/env/file_based/overrides/mainnet.yaml --chain zksys
+
+   # Re-apply l3_to_gateway override last so the child chain keeps gateway-specific settlement settings.
    zkstack dev config-writer --path ../etc/env/file_based/overrides/l3_to_gateway.yaml --chain zksys
    ```
 
