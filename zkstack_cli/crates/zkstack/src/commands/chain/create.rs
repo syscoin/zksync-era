@@ -1,6 +1,7 @@
-use std::cell::OnceCell;
+use std::{cell::OnceCell, fs};
 
 use anyhow::Context;
+use serde_json::json;
 use xshell::Shell;
 use zkstack_cli_common::{logger, spinner::Spinner};
 use zkstack_cli_config::{
@@ -93,9 +94,18 @@ pub(crate) async fn create_chain_inner(
         "ecosystem_config.list_of_chains() after: {:?}",
         ecosystem_config.list_of_chains()
     );
-    let genesis_config_path = ecosystem_config.default_genesis_path(vm_option);
-    let default_genesis_config = GenesisConfig::read(shell, &genesis_config_path).await?;
-    let has_evm_emulation_support = default_genesis_config.evm_emulator_hash()?.is_some();
+    let zksync_os_genesis_template = if vm_option.is_zksync_os() {
+        Some(read_zksync_os_genesis_template(shell, ecosystem_config)?)
+    } else {
+        None
+    };
+    let has_evm_emulation_support = if let Some(template) = &zksync_os_genesis_template {
+        template.get("evm_emulator_hash").is_some()
+    } else {
+        let genesis_config_path = ecosystem_config.default_genesis_path(vm_option);
+        let default_genesis_config = GenesisConfig::read(shell, &genesis_config_path).await?;
+        default_genesis_config.evm_emulator_hash()?.is_some()
+    };
     if args.evm_emulator && !has_evm_emulation_support {
         anyhow::bail!(MSG_EVM_EMULATOR_HASH_MISSING_ERR);
     }
@@ -135,6 +145,63 @@ pub(crate) async fn create_chain_inner(
         args.wallet_path,
     )?;
 
+    if let Some(template) = zksync_os_genesis_template {
+        let genesis_root = template
+            .get("genesis_root")
+            .cloned()
+            .context("zkOS genesis template is missing `genesis_root`")?;
+        let mut genesis = serde_json::Map::new();
+        genesis.insert("genesis_root".to_string(), genesis_root);
+        genesis.insert(
+            "l1_chain_id".to_string(),
+            json!(ecosystem_config.l1_network.chain_id()),
+        );
+        genesis.insert(
+            "l2_chain_id".to_string(),
+            json!(chain_config.chain_id.as_u64()),
+        );
+        genesis.insert(
+            "l1_batch_commit_data_generator_mode".to_string(),
+            serde_json::to_value(args.l1_batch_commit_data_generator_mode)?,
+        );
+        genesis.insert(
+            "custom_genesis_state_path".to_string(),
+            serde_json::Value::Null,
+        );
+        if let Some(hash) = template.get("evm_emulator_hash").cloned() {
+            genesis.insert("evm_emulator_hash".to_string(), hash);
+        }
+        fs::write(
+            chain_config.path_to_genesis_config(),
+            serde_json::to_string_pretty(&serde_json::Value::Object(genesis))?,
+        )?;
+    }
+
     chain_config.save_with_base_path(shell, chain_path)?;
     Ok(())
+}
+
+fn read_zksync_os_genesis_template(
+    shell: &Shell,
+    ecosystem_config: &EcosystemConfig,
+) -> anyhow::Result<serde_json::Value> {
+    let primary_path =
+        ecosystem_config.default_genesis_path(zkstack_cli_types::VMOption::ZKSyncOsVM);
+    let fallback_path = ecosystem_config
+        .link_to_code()
+        .parent()
+        .context("link_to_code must have a parent directory")?
+        .join("zksync-os-server")
+        .join("local-chains")
+        .join("v30.2")
+        .join("genesis.json");
+    let path = if shell.path_exists(&primary_path) {
+        primary_path
+    } else {
+        fallback_path
+    };
+    let raw = fs::read_to_string(&path)
+        .with_context(|| format!("failed reading zkOS genesis template at `{path:?}`"))?;
+    serde_json::from_str(&raw)
+        .with_context(|| format!("failed deserializing zkOS genesis template at `{path:?}`"))
 }

@@ -1,3 +1,5 @@
+use std::env;
+
 use clap::{Parser, ValueEnum};
 use serde::{Deserialize, Serialize};
 use strum::{Display, EnumIter, IntoEnumIterator};
@@ -56,27 +58,36 @@ pub enum ValidiumType {
 }
 
 impl ValidiumType {
+    pub fn read_bitcoin_from_env_or_prompt() -> Self {
+        let cfg = BitcoinConfig {
+            api_node_url: env::var("BITCOIN_API_NODE_URL").unwrap_or_else(|_| {
+                Prompt::new("Bitcoin DA RPC URL")
+                    .default("http://127.0.0.1:8369")
+                    .ask()
+            }),
+            poda_url: env::var("BITCOIN_PODA_URL").unwrap_or_else(|_| {
+                Prompt::new("PoDA URL")
+                    .default("https://poda.syscoin.org")
+                    .ask()
+            }),
+        };
+        let secrets = BitcoinSecrets {
+            rpc_user: env::var("DA_SECRETS_RPC_USER")
+                .unwrap_or_else(|_| Prompt::new("Bitcoin DA RPC user").default("user").ask()),
+            rpc_password: env::var("DA_SECRETS_RPC_PASSWORD").unwrap_or_else(|_| {
+                Prompt::new("Bitcoin DA RPC password")
+                    .default("password")
+                    .ask()
+            }),
+        };
+        ValidiumType::Bitcoin((cfg, secrets))
+    }
+
     pub fn read() -> Self {
         match PromptSelect::new(MSG_VALIDIUM_TYPE_PROMPT, ValidiumTypeInternal::iter()).ask() {
             ValidiumTypeInternal::EigenDA => ValidiumType::EigenDA, // EigenDA doesn't support configuration through CLI
             // SYSCOIN
-            ValidiumTypeInternal::Bitcoin => {
-                let cfg = BitcoinConfig {
-                    api_node_url: Prompt::new("Bitcoin DA RPC URL")
-                        .default("http://127.0.0.1:8369")
-                        .ask(),
-                    poda_url: Prompt::new("PoDA URL")
-                        .default("https://poda.syscoin.org")
-                        .ask(),
-                };
-                let secrets = BitcoinSecrets {
-                    rpc_user: Prompt::new("Bitcoin DA RPC user").default("user").ask(),
-                    rpc_password: Prompt::new("Bitcoin DA RPC password")
-                        .default("password")
-                        .ask(),
-                };
-                ValidiumType::Bitcoin((cfg, secrets))
-            }
+            ValidiumTypeInternal::Bitcoin => Self::read_bitcoin_from_env_or_prompt(),
             ValidiumTypeInternal::NoDA => ValidiumType::NoDA,
             ValidiumTypeInternal::Avail => {
                 let avail_client_type = PromptSelect::new(

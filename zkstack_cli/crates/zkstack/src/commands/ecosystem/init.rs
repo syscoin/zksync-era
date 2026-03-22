@@ -280,6 +280,10 @@ async fn deploy_ecosystem(
     .await?;
     spinner.finish();
 
+    // SYSCOIN Save core ecosystem contracts before follow-up admin actions so retries can continue
+    // without reconstructing on-disk config state from script artifacts.
+    contracts_config.save_with_base_path(shell, &ecosystem_config.config)?;
+
     accept_admin(
         shell,
         ecosystem_config.path_to_foundry_scripts_for_ctm(vm_option),

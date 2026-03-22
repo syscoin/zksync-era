@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use anyhow::Context;
 use xshell::Shell;
 use zkstack_cli_common::{
@@ -30,6 +32,26 @@ use crate::{
     messages::{msg_chain_load_err, msg_initializing_chain, MSG_DEPLOYING_ERC20_SPINNER},
     utils::forge::{check_the_balance, fill_forge_private_key, WalletOwner},
 };
+// SYSCOIN
+pub(crate) fn resolve_ecosystem_genesis_path(
+    shell: &Shell,
+    config: &EcosystemConfig,
+    vm_option: VMOption,
+) -> anyhow::Result<PathBuf> {
+    let primary_path = config.default_genesis_path(vm_option);
+    if shell.path_exists(&primary_path) || !vm_option.is_zksync_os() {
+        return Ok(primary_path);
+    }
+
+    Ok(config
+        .link_to_code()
+        .parent()
+        .context("link_to_code must have a parent directory")?
+        .join("zksync-os-server")
+        .join("local-chains")
+        .join("v30.2")
+        .join("genesis.json"))
+}
 
 #[allow(clippy::too_many_arguments)]
 pub async fn deploy_l1_core_contracts(
@@ -45,7 +67,7 @@ pub async fn deploy_l1_core_contracts(
 ) -> anyhow::Result<CoreContractsConfig> {
     let deploy_config_path = DEPLOY_ECOSYSTEM_CORE_CONTRACTS_SCRIPT_PARAMS
         .input(&config.path_to_foundry_scripts_for_ctm(vm_option));
-    let genesis_config_path = config.default_genesis_path(vm_option);
+    let genesis_config_path = resolve_ecosystem_genesis_path(shell, config, vm_option)?;
     let default_genesis_config = GenesisConfig::read(shell, &genesis_config_path).await?;
     let default_genesis_input = GenesisInput::new(&default_genesis_config, vm_option)?;
     let wallets_config = config.get_wallets()?;

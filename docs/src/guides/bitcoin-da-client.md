@@ -1,13 +1,20 @@
-# Bitcoin Data Availability client (Gateway node)
+# Bitcoin Data Availability client (settlement node)
 
 This section explains how to enable the Bitcoin DA client for zkSync nodes. The implementation leverages the
 [Syscoin PoDA service](https://docs.syscoin.org/docs/tech/poda/) to store data off chain. PoDA is not a standard Bitcoin
 node: it runs on a Syscoin node that is secured by Bitcoin miners through merged mining.
 
-## Enabling the client (on Gateway / settlement layer)
+## Enabling the client (on the settlement layer)
 
-Set `DA_CLIENT=Bitcoin` in your environment or configuration file. This is intended for the Gateway (Validium) node. For
-the External Node the variables should be prefixed with `EN_` (e.g. `EN_DA_CLIENT`).
+The old `DA_CLIENT=Bitcoin` / `da_client.*` layout belongs to the legacy settlement-node /
+control-plane configuration surface.
+
+For `zksync-os-server`, the current integration uses:
+
+- `l1_sender.pubdata_mode=Bitcoin`
+- `batcher.bitcoin_da_*`
+
+Do not assume the old `da_client.*` example by itself is sufficient for the current zkOS runtime.
 
 ### Required variables
 
@@ -39,9 +46,10 @@ export EN_DA_SECRETS_RPC_PASSWORD="password"
 Note: zkSYS (child rollup) does not use the Bitcoin DA client; keep it in rollup mode. For instructions on running the
 PoDA service and Syscoin node see the [Syscoin GitHub repository](https://github.com/syscoin/syscoin).
 
-### `smart_config` example
+### Legacy / control-plane example
 
-To configure the node with the new layered configuration format, add a fragment similar to:
+If you are configuring the older control-plane / settlement-node stack, the legacy layout looked
+like this:
 
 ```yaml
 da_client:
@@ -58,7 +66,42 @@ da_client:
   rpc_password: password
 ```
 
-When using Bitcoin DA for Validium, set `state_keeper.max_pubdata_per_batch` to about `750_000` bytes. It can support
-2MB but the circuits currently support around 761856 bytes (based on 6 EIP4844 blobs). This will naturally increase
-which comes at the cost of additional pubdata slots (at 2mb it will use 200mb RAM for the bootloader). For now we keep
-it under the pre-configured circuit, slot and bootloader limits.
+The old Era-side recommendation about `state_keeper.max_pubdata_per_batch` does not carry over
+1:1 to `zksync-os-server`.
+
+For zkOS:
+
+- there is no direct `state_keeper.max_pubdata_per_batch` runtime key
+- the closest runtime knobs live under `sequencer` and `batcher`
+- in particular, `sequencer.block_pubdata_limit_bytes` is currently reused by the node as both a
+  per-block limit and the batch pubdata seal limit
+
+So for the current zkOS runtime path, prefer the `l1_sender` / `batcher` configuration below and
+do not blindly reuse the old `750_000`-byte Era assumption.
+
+### `zksync-os-server` batcher settings
+
+For the current zkOS runtime path, configure Bitcoin DA on the batcher:
+
+```yaml
+l1_sender:
+  pubdata_mode: Bitcoin
+
+batcher:
+  bitcoin_da_rpc_url: <SYSCOIN_NODE_RPC_URL>
+  bitcoin_da_rpc_user: <RPC_USER_OR___cookie__>
+  bitcoin_da_rpc_password: <RPC_PASSWORD_OR_COOKIE_SECRET>
+  bitcoin_da_poda_url: <PODA_URL>
+  bitcoin_da_wallet_name: zksync-os
+  bitcoin_da_address_label: zksync-os-batcher
+  bitcoin_da_request_timeout: 60s
+  bitcoin_da_finality_poll_interval: 15s
+  bitcoin_da_finality_mode: confirmations
+  bitcoin_da_finality_confirmations: 5
+  bitcoin_da_finality_timeout: 45m
+```
+
+Use finality modes as follows:
+
+- testnet: `bitcoin_da_finality_mode: confirmations`
+- mainnet: `bitcoin_da_finality_mode: chainlock`

@@ -5,6 +5,7 @@ use zkstack_cli_config::{
     create_local_configs_dir, create_wallets, get_default_era_chain_id,
     traits::SaveConfigWithBasePath, EcosystemConfig, EcosystemConfigFromFileError, ZkStackConfig,
 };
+use zkstack_cli_types::VMOption;
 
 use crate::{
     commands::{
@@ -65,7 +66,7 @@ async fn create(args: EcosystemCreateArgs, shell: &Shell) -> anyhow::Result<()> 
     create_erc20_deployment_config(shell, &configs_path)?;
     create_apps_config(shell, &configs_path)?;
 
-    let ecosystem_config = EcosystemConfig::new(
+    let mut ecosystem_config = EcosystemConfig::new(
         ecosystem_name.clone(),
         args.l1_network,
         link_to_code,
@@ -78,6 +79,14 @@ async fn create(args: EcosystemCreateArgs, shell: &Shell) -> anyhow::Result<()> 
         args.wallet_creation,
         shell.clone().into(),
     );
+    if chain_config.vm_option.is_zksync_os() {
+        let link_to_code = ecosystem_config.link_to_code();
+        ecosystem_config.set_sources_path(
+            link_to_code.join("contracts"),
+            link_to_code.join("etc/env/file_based"),
+            VMOption::ZKSyncOsVM,
+        );
+    }
 
     // Use 0 id for ecosystem  wallets
     create_wallets(

@@ -51,7 +51,8 @@ impl GenesisInput {
                     bootloader_hash: one,
                     default_aa_hash: one,
                     evm_emulator_hash: one,
-                    rollup_last_leaf_index: 0,
+                    // SYSCOIN: 0 is invalid, 1 is the first leaf
+                    rollup_last_leaf_index: 1,
                     protocol_version: Default::default(),
                 })
             }

@@ -24,7 +24,10 @@ use crate::{
     admin_functions::{accept_admin, accept_owner},
     commands::{
         ctm::{args::InitNewCTMArgs, commands::set_new_ctm_contracts::set_new_ctm_contracts},
-        ecosystem::create_configs::create_initial_deployments_config,
+        ecosystem::{
+            common::resolve_ecosystem_genesis_path,
+            create_configs::create_initial_deployments_config,
+        },
     },
     messages::MSG_INITIALIZING_CTM,
     utils::forge::{check_the_balance, fill_forge_private_key, WalletOwner},
@@ -129,6 +132,9 @@ pub async fn deploy_new_ctm_and_accept_admin(
     .await?;
     spinner.finish();
 
+    // SYSCOIN Persist CTM addresses before follow-up admin actions so retries can continue from config.
+    contracts_config.save_with_base_path(shell, &ecosystem_config.config)?;
+
     let ctm = contracts_config.ctm(vm_option);
     accept_owner(
         shell,
@@ -172,7 +178,8 @@ pub async fn deploy_new_ctm(
     let mut contracts_config = config.get_contracts_config()?;
     let deploy_config_path =
         DEPLOY_CTM_SCRIPT_PARAMS.input(&config.path_to_foundry_scripts_for_ctm(vm_option));
-    let genesis_config_path = config.default_genesis_path(vm_option);
+    // SYSCOIN
+    let genesis_config_path = resolve_ecosystem_genesis_path(shell, config, vm_option)?;
     let default_genesis_config = GenesisConfig::read(shell, &genesis_config_path).await?;
     let default_genesis_input = GenesisInput::new(&default_genesis_config, vm_option)?;
 
