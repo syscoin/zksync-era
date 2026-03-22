@@ -6,8 +6,8 @@ node: it runs on a Syscoin node that is secured by Bitcoin miners through merged
 
 ## Enabling the client (on the settlement layer)
 
-The old `DA_CLIENT=Bitcoin` / `da_client.*` layout belongs to the legacy settlement-node /
-control-plane configuration surface.
+The old `DA_CLIENT=Bitcoin` / `da_client.*` layout belongs to the legacy settlement-node / control-plane configuration
+surface.
 
 For `zksync-os-server`, the current integration uses:
 
@@ -48,8 +48,7 @@ PoDA service and Syscoin node see the [Syscoin GitHub repository](https://github
 
 ### Legacy / control-plane example
 
-If you are configuring the older control-plane / settlement-node stack, the legacy layout looked
-like this:
+If you are configuring the older control-plane / settlement-node stack, the legacy layout looked like this:
 
 ```yaml
 da_client:
@@ -66,18 +65,18 @@ da_client:
   rpc_password: password
 ```
 
-The old Era-side recommendation about `state_keeper.max_pubdata_per_batch` does not carry over
-1:1 to `zksync-os-server`.
+The old Era-side recommendation about `state_keeper.max_pubdata_per_batch` does not carry over 1:1 to
+`zksync-os-server`.
 
 For zkOS:
 
 - there is no direct `state_keeper.max_pubdata_per_batch` runtime key
 - the closest runtime knobs live under `sequencer` and `batcher`
-- in particular, `sequencer.block_pubdata_limit_bytes` is currently reused by the node as both a
-  per-block limit and the batch pubdata seal limit
+- in particular, `sequencer.block_pubdata_limit_bytes` is currently reused by the node as both a per-block limit and the
+  batch pubdata seal limit
 
-So for the current zkOS runtime path, prefer the `l1_sender` / `batcher` configuration below and
-do not blindly reuse the old `750_000`-byte Era assumption.
+So for the current zkOS runtime path, prefer the `l1_sender` / `batcher` configuration below and do not blindly reuse
+the old `750_000`-byte Era assumption.
 
 ### `zksync-os-server` batcher settings
 

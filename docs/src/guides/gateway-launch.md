@@ -34,8 +34,8 @@ Right now the control plane and the runtime live in different places:
 - `zksync-airbender` / `zksync-airbender-prover`:
   - real zkOS proving path
 
-Do not assume the legacy `zkstack server` / `zkstack prover` flow is the same thing as the current
-zkOS runtime + prover path.
+Do not assume the legacy `zkstack server` / `zkstack prover` flow is the same thing as the current zkOS runtime + prover
+path.
 
 ## Prerequisites
 
@@ -80,9 +80,9 @@ Before deploying contracts, fund the wallets listed in:
 - `chains/gateway/configs/wallets.yaml`
 - `chains/zksys/configs/wallets.yaml`
 
-At a minimum, the `deployer` and `governor` wallets should have enough SYS to cover deployment and
-migration transactions. The CLI recommends about 5 SYS for contract deployment on public networks;
-plan for at least that in the deployer wallet.
+At a minimum, the `deployer` and `governor` wallets should have enough SYS to cover deployment and migration
+transactions. The CLI recommends about 5 SYS for contract deployment on public networks; plan for at least that in the
+deployer wallet.
 
 Suggested funding:
 
@@ -97,8 +97,8 @@ Suggested funding:
   - governor: 2 SYS
   - operator: at least 1 SYS
 
-The child-chain operator funding matters for migration: the current `migrate-to-gateway` flow
-checks a minimum validator balance before sending the migration transactions.
+The child-chain operator funding matters for migration: the current `migrate-to-gateway` flow checks a minimum validator
+balance before sending the migration transactions.
 
 ## 1. Create the Gateway ecosystem
 
@@ -153,8 +153,7 @@ zkstack ecosystem init \
   --observability false
 ```
 
-If prompted about having less than 5 SYS, select "Proceed with the deployment anyway" if your
-wallet is funded.
+If prompted about having less than 5 SYS, select "Proceed with the deployment anyway" if your wallet is funded.
 
 `FOUNDRY_CHAIN_ID` here refers to the Syscoin L1 chain ID, not the Gateway chain ID.
 
@@ -171,8 +170,7 @@ zkstack chain init \
   --l1-rpc-url ${L1_RPC_URL}
 ```
 
-If you omit `--validium-type bitcoin`, the init flow should collect the Bitcoin DA values
-interactively:
+If you omit `--validium-type bitcoin`, the init flow should collect the Bitcoin DA values interactively:
 
 - Bitcoin DA RPC URL
 - PoDA URL
@@ -195,9 +193,8 @@ zkstack dev config-writer --path ../etc/env/file_based/overrides/testnet.yaml --
 zkstack dev config-writer --path ../etc/env/file_based/overrides/gateway.yaml --chain gateway
 ```
 
-This is the intended shape: the Gateway settlement chain starts on L1, then is converted into the
-Gateway topology. After conversion it is still the Gateway settlement chain and should continue to
-use Bitcoin DA.
+This is the intended shape: the Gateway settlement chain starts on L1, then is converted into the Gateway topology.
+After conversion it is still the Gateway settlement chain and should continue to use Bitcoin DA.
 
 ## 5. Create the child zkOS rollup chain on top of Gateway
 
@@ -238,8 +235,8 @@ zkstack chain init \
   --l1-rpc-url ${L1_RPC_URL}
 ```
 
-If your Gateway RPC is not local, update it before migration. The migration command reads
-`api.web3_json_rpc.http_url` from the Gateway chain general config:
+If your Gateway RPC is not local, update it before migration. The migration command reads `api.web3_json_rpc.http_url`
+from the Gateway chain general config:
 
 ```yaml
 api:
@@ -247,8 +244,8 @@ api:
     http_url: <GATEWAY_PUBLIC_RPC_URL>
 ```
 
-This setting is for the `zkstack` migration flow. Later, when you run `zksync-os-server`, the
-runtime-side setting is `general.gateway_rpc_url`.
+This setting is for the `zkstack` migration flow. Later, when you run `zksync-os-server`, the runtime-side setting is
+`general.gateway_rpc_url`.
 
 Then migrate the child chain to Gateway:
 
@@ -282,17 +279,15 @@ The current Gateway migration flow has two important hardcoded assumptions:
 - `zkstack chain gateway migrate-to-gateway` currently hardcodes
   `DEFAULT_MAX_L1_GAS_PRICE_FOR_PRIORITY_TXS = 50_000_000_000` (50 gwei) in
   `zkstack_cli/crates/zkstack/src/commands/chain/gateway/constants.rs`.
-- The same flow checks that the child-chain operator / validator holds at least 1 SYS before
-  migration.
+- The same flow checks that the child-chain operator / validator holds at least 1 SYS before migration.
 
-If the network conditions on your target Syscoin environment require a higher gas cap, patch that
-constant and rebuild `zkstack` before running the migration commands. There is no CLI flag for this
-today.
+If the network conditions on your target Syscoin environment require a higher gas cap, patch that constant and rebuild
+`zkstack` before running the migration commands. There is no CLI flag for this today.
 
 ## 7. Sanity-check the DA modes before runtime
 
-Before you try to run `zksync-os-server`, make sure the deployed settlement-layer pricing mode
-matches the runtime pubdata mode you are about to configure:
+Before you try to run `zksync-os-server`, make sure the deployed settlement-layer pricing mode matches the runtime
+pubdata mode you are about to configure:
 
 - Gateway settlement chain:
   - deployed pricing mode must be `Validium`
@@ -301,8 +296,7 @@ matches the runtime pubdata mode you are about to configure:
   - deployed pricing mode must be `Rollup`
   - runtime `l1_sender.pubdata_mode` must be `RelayedL2Calldata`
 
-If the deployed state and runtime config do not agree, `zksync-os-server` will refuse to start with
-an error like:
+If the deployed state and runtime config do not agree, `zksync-os-server` will refuse to start with an error like:
 
 ```text
 Pubdata mode doesn't correspond to pricing mode from the l1.
@@ -313,8 +307,7 @@ Treat that as a deploy / config mismatch, not as a runtime bug.
 
 ## 8. Configure `zksync-os-server`
 
-Use the `zkstack`-generated chain configs as the base input, then add the zkOS runtime-specific
-overrides below.
+Use the `zkstack`-generated chain configs as the base input, then add the zkOS runtime-specific overrides below.
 
 ### Gateway settlement chain
 
@@ -342,24 +335,20 @@ batcher:
 
 Notes:
 
-- Keep `general.gateway_rpc_url` set in the Gateway topology. Runtime settlement-layer discovery
-  handles the self-settlement case and avoids trying to connect to itself when the node is the
-  settlement layer.
+- Keep `general.gateway_rpc_url` set in the Gateway topology. Runtime settlement-layer discovery handles the
+  self-settlement case and avoids trying to connect to itself when the node is the settlement layer.
 - The built-in zkOS defaults are more aggressive than the old Era public-network presets:
   - `sequencer.block_time` defaults to `250ms`
   - `batcher.batch_timeout` defaults to `1s`
   - `l1_sender.poll_interval` defaults to `100ms`
-  - `l1_watcher.poll_interval` defaults to `100ms`
-  Those are acceptable for local bring-up, but they are not the same operational profile as the
-  old Syscoin/Gateway Era overrides.
-- There is no ready-made zkOS `testnet.yaml` / `mainnet.yaml` preset bundle equivalent to the old
-  Era runtime override stack. `zksync-os-server` uses code defaults plus whatever YAML files you
-  pass via `--config`.
-- On Syscoin testnet, confirmation-based Bitcoin DA finality is required because ChainLocks are not
-  currently available.
-- The Era override key `state_keeper.max_pubdata_per_batch` does not map 1:1 to a zkOS runtime
-  setting. On the OS side, the relevant knobs live under `sequencer` and `batcher`, especially
-  `sequencer.block_pubdata_limit_bytes`, `batcher.blocks_per_batch_limit`, and `batcher.batch_timeout`.
+  - `l1_watcher.poll_interval` defaults to `100ms` Those are acceptable for local bring-up, but they are not the same
+    operational profile as the old Syscoin/Gateway Era overrides.
+- There is no ready-made zkOS `testnet.yaml` / `mainnet.yaml` preset bundle equivalent to the old Era runtime override
+  stack. `zksync-os-server` uses code defaults plus whatever YAML files you pass via `--config`.
+- On Syscoin testnet, confirmation-based Bitcoin DA finality is required because ChainLocks are not currently available.
+- The Era override key `state_keeper.max_pubdata_per_batch` does not map 1:1 to a zkOS runtime setting. On the OS side,
+  the relevant knobs live under `sequencer` and `batcher`, especially `sequencer.block_pubdata_limit_bytes`,
+  `batcher.blocks_per_batch_limit`, and `batcher.batch_timeout`.
 - On mainnet, switch the Gateway chain to:
 
   ```yaml
@@ -380,8 +369,8 @@ l1_sender:
 
 Notes:
 
-- Do not configure `bitcoin_da_*` on the child chain. The Gateway settlement chain is the one that
-  publishes to Bitcoin DA.
+- Do not configure `bitcoin_da_*` on the child chain. The Gateway settlement chain is the one that publishes to Bitcoin
+  DA.
 - Keep the rollup-specific overrides from `l3_to_gateway.yaml` on the child chain.
 
 ### Recommended first-pass zkOS runtime translations
@@ -389,18 +378,13 @@ Notes:
 These are the Era-to-zkOS translations that are clear enough to carry over directly:
 
 - Era `gateway.yaml`:
-  - `state_keeper.miniblock_commit_deadline_ms: 10000`
-    -> zkOS `sequencer.block_time: 10s`
-  - `service block pacing`
-    -> zkOS `sequencer.service_block_delay: 30s`
-  - `state_keeper.block_commit_deadline_ms: 2400000`
-    -> zkOS `batcher.batch_timeout: 40m`
+  - `state_keeper.miniblock_commit_deadline_ms: 10000` -> zkOS `sequencer.block_time: 10s`
+  - `service block pacing` -> zkOS `sequencer.service_block_delay: 30s`
+  - `state_keeper.block_commit_deadline_ms: 2400000` -> zkOS `batcher.batch_timeout: 40m`
 - Era `validium.yaml`:
-  - `eth.sender.pubdata_sending_mode: CUSTOM`
-    -> zkOS `l1_sender.pubdata_mode: Bitcoin`
+  - `eth.sender.pubdata_sending_mode: CUSTOM` -> zkOS `l1_sender.pubdata_mode: Bitcoin`
 - Era `l3_to_gateway.yaml`:
-  - `eth.sender.pubdata_sending_mode: CALLDATA`
-    -> zkOS `l1_sender.pubdata_mode: RelayedL2Calldata`
+  - `eth.sender.pubdata_sending_mode: CALLDATA` -> zkOS `l1_sender.pubdata_mode: RelayedL2Calldata`
 
 Recommended Gateway-chain timing additions:
 
@@ -429,17 +413,16 @@ batcher:
   batch_timeout: 1s
 ```
 
-For the child chain, keep the defaults initially unless you have measured a reason to change them.
-In particular, do not immediately carry over Era's `max_pubdata_per_batch: 750000` assumption into
-zkOS runtime config. Start with zkOS defaults and raise pubdata limits only after measuring proving
-latency and batch publication behavior.
+For the child chain, keep the defaults initially unless you have measured a reason to change them. In particular, do not
+immediately carry over Era's `max_pubdata_per_batch: 750000` assumption into zkOS runtime config. Start with zkOS
+defaults and raise pubdata limits only after measuring proving latency and batch publication behavior.
 
 ## 9. Run the zkOS runtime
 
 Use `zksync-os-server` directly, not `zkstack server`.
 
-The node supports multiple `--config` flags or a `:`-delimited list, so you can keep base configs
-and local overrides separate.
+The node supports multiple `--config` flags or a `:`-delimited list, so you can keep base configs and local overrides
+separate.
 
 Gateway chain:
 
