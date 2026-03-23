@@ -110,8 +110,8 @@ Before deploying contracts, fund the wallets listed in:
 - `chains/zksys/configs/wallets.yaml` (after the child chain is created)
 
 At a minimum, the `deployer` and `governor` wallets should have enough SYS to cover deployment and migration
-transactions. The CLI enforces a 5 SYS minimum-balance check during deployment paths; in practice, fund above 5 SYS
-to leave room for gas spent by preceding transactions in the same step.
+transactions. The CLI enforces a 5 SYS minimum-balance check during deployment paths; in practice, fund above 5 SYS to
+leave room for gas spent by preceding transactions in the same step.
 
 Suggested funding:
 
@@ -147,17 +147,17 @@ panic in non-interactive sessions (`Kind(NotConnected)`).
 
 Preflight check before each major step (`ecosystem init`, `chain init`, `migrate-to-gateway`):
 
-- Re-read the relevant wallets file(s) and confirm every wallet entry is funded:
-  `deployer`, `governor`, `operator`, `blob_operator`, `fee_account`,
-  `token_multiplier_setter`, `prove_operator`, and `execute_operator`.
+- Re-read the relevant wallets file(s) and confirm every wallet entry is funded: `deployer`, `governor`, `operator`,
+  `blob_operator`, `fee_account`, `token_multiplier_setter`, `prove_operator`, and `execute_operator`.
 - If any listed wallet is under the expected balance, top it up before continuing.
 
 Important deployment constraint:
 
-- `zkstack ecosystem init` runs a balance guard before deployment. If the deployer wallet is below the minimum threshold,
-  the CLI opens an interactive "Proceed with the deployment anyway / Check balance again / Exit" prompt.
+- `zkstack ecosystem init` runs a balance guard before deployment. If the deployer wallet is below the minimum
+  threshold, the CLI opens an interactive "Proceed with the deployment anyway / Check balance again / Exit" prompt.
 - In non-interactive environments, that prompt path can fail with `Kind(NotConnected)` instead of proceeding.
-- Ensure deployer / governor balances stay comfortably above the minimum before running `ecosystem init` and CTM follow-ups.
+- Ensure deployer / governor balances stay comfortably above the minimum before running `ecosystem init` and CTM
+  follow-ups.
 - Passing forge args (for example private key or gas price) does not bypass this balance prompt path.
 
 ## 1. Create the Gateway ecosystem
@@ -409,8 +409,8 @@ Notes:
 - There is no ready-made zkOS `testnet.yaml` / `mainnet.yaml` preset bundle equivalent to the old Era runtime override
   stack. `zksync-os-server` uses code defaults plus whatever YAML files you pass via `--config`.
 - On Syscoin testnet, confirmation-based Bitcoin DA finality is required because ChainLocks are not currently available.
-- If you use `batcher.bitcoin_da_rpc_user: __cookie__`, set `batcher.bitcoin_da_rpc_password` to the actual cookie secret
-  value from your Syscoin node cookie file. A placeholder value such as `dummy` will fail with HTTP 401.
+- If you use `batcher.bitcoin_da_rpc_user: __cookie__`, set `batcher.bitcoin_da_rpc_password` to the actual cookie
+  secret value from your Syscoin node cookie file. A placeholder value such as `dummy` will fail with HTTP 401.
 - The Era override key `state_keeper.max_pubdata_per_batch` does not map 1:1 to a zkOS runtime setting. On the OS side,
   the relevant knobs live under `sequencer` and `batcher`, especially `sequencer.block_pubdata_limit_bytes`,
   `batcher.blocks_per_batch_limit`, and `batcher.batch_timeout`.
@@ -537,6 +537,7 @@ At the topology level, the target shape is:
   - Remove `-a` from those commands.
 - Panic in `prompt/select.rs` with `Kind(NotConnected)` during non-interactive runs:
   - This is caused by an unresolved interactive prompt in a non-TTY session.
-  - Most commonly this is the low-balance deployer/governor prompt in `ecosystem init` / CTM admin steps; fund above minimum first.
+  - Most commonly this is the low-balance deployer/governor prompt in `ecosystem init` / CTM admin steps; fund above
+    minimum first.
 - Build failure `error[E0603]: module common is private` in `zkstack_cli`:
   - This indicates a branch mismatch / temporary regression. Pull the latest fix in your branch before deployment.
