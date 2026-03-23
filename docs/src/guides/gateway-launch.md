@@ -61,6 +61,35 @@ path.
   zkstack containers
   ```
 
+### Deterministic CLI input notes
+
+Pass all required CLI values explicitly to avoid unexpected prompts in automated or non-interactive runs:
+
+- Always set `--l1-network` during `zkstack ecosystem create` (for Syscoin testnet use `tanenbaum`).
+- Always set explicit booleans for prompt-backed options such as `--set-as-default` and `--start-containers`.
+- Do **not** use `-a` with `zkstack ecosystem create` or `zkstack chain create`; those subcommands do not accept it.
+
+Example:
+
+```bash
+zkstack ecosystem create \
+  --ecosystem-name gateway \
+  --l1-network tanenbaum \
+  --link-to-code ${ZKSYNC_ERA_PATH} \
+  --chain-name gateway \
+  --chain-id ${GATEWAY_CHAIN_ID} \
+  --prover-mode ${GATEWAY_PROVER_MODE} \
+  --wallet-creation random \
+  --l1-batch-commit-data-generator-mode ${GATEWAY_COMMIT_MODE} \
+  --base-token-address 0x0000000000000000000000000000000000000001 \
+  --base-token-price-nominator 1 \
+  --base-token-price-denominator 1 \
+  --set-as-default true \
+  --evm-emulator false \
+  --start-containers false \
+  --zksync-os
+```
+
 ### Network variables
 
 ```bash
@@ -78,27 +107,58 @@ Before deploying contracts, fund the wallets listed in:
 
 - `configs/wallets.yaml` (ecosystem wallets)
 - `chains/gateway/configs/wallets.yaml`
-- `chains/zksys/configs/wallets.yaml`
+- `chains/zksys/configs/wallets.yaml` (after the child chain is created)
 
 At a minimum, the `deployer` and `governor` wallets should have enough SYS to cover deployment and migration
-transactions. The CLI recommends about 5 SYS for contract deployment on public networks; plan for at least that in the
-deployer wallet.
+transactions. The CLI enforces a 5 SYS minimum-balance check during deployment paths; in practice, fund above 5 SYS
+to leave room for gas spent by preceding transactions in the same step.
 
 Suggested funding:
 
 - Ecosystem wallets (`configs/wallets.yaml`):
-  - deployer: 1 SYS
-  - governor: 5 SYS
+  - deployer: 6 SYS
+  - governor: 6 SYS
+  - operator: keep funded (recommended >= 1 SYS)
 - Gateway wallets (`chains/gateway/configs/wallets.yaml`):
-  - deployer: 1 SYS
-  - governor: 0.1 SYS
+  - deployer: 6 SYS
+  - governor: 6 SYS
+  - operator: keep funded (recommended >= 1 SYS)
+  - blob_operator: keep funded (recommended >= 0.1 SYS)
+  - fee_account: keep funded (recommended >= 0.1 SYS)
+  - token_multiplier_setter: keep funded (recommended >= 0.1 SYS)
+  - prove_operator: keep funded (recommended >= 0.1 SYS)
+  - execute_operator: keep funded (recommended >= 0.1 SYS)
 - Child-chain wallets (`chains/zksys/configs/wallets.yaml`):
-  - deployer: 0.2 SYS
-  - governor: 2 SYS
-  - operator: at least 1 SYS
+  - deployer: 6 SYS
+  - governor: 6 SYS
+  - operator: keep funded (recommended >= 1 SYS)
+  - blob_operator: keep funded (recommended >= 0.1 SYS)
+  - fee_account: keep funded (recommended >= 0.1 SYS)
+  - token_multiplier_setter: keep funded (recommended >= 0.1 SYS)
+  - prove_operator: keep funded (recommended >= 0.1 SYS)
+  - execute_operator: keep funded (recommended >= 0.1 SYS)
 
 The child-chain operator funding matters for migration: the current `migrate-to-gateway` flow checks a minimum validator
 balance before sending the migration transactions.
+
+The same 5 SYS deployer/governor minimum applies to child-chain initialization paths as well. If child `deployer` /
+`governor` balances fall under this threshold, `chain init` may trigger an interactive low-balance prompt, which can
+panic in non-interactive sessions (`Kind(NotConnected)`).
+
+Preflight check before each major step (`ecosystem init`, `chain init`, `migrate-to-gateway`):
+
+- Re-read the relevant wallets file(s) and confirm every wallet entry is funded:
+  `deployer`, `governor`, `operator`, `blob_operator`, `fee_account`,
+  `token_multiplier_setter`, `prove_operator`, and `execute_operator`.
+- If any listed wallet is under the expected balance, top it up before continuing.
+
+Important deployment constraint:
+
+- `zkstack ecosystem init` runs a balance guard before deployment. If the deployer wallet is below the minimum threshold,
+  the CLI opens an interactive "Proceed with the deployment anyway / Check balance again / Exit" prompt.
+- In non-interactive environments, that prompt path can fail with `Kind(NotConnected)` instead of proceeding.
+- Ensure deployer / governor balances stay comfortably above the minimum before running `ecosystem init` and CTM follow-ups.
+- Passing forge args (for example private key or gas price) does not bypass this balance prompt path.
 
 ## 1. Create the Gateway ecosystem
 
@@ -142,6 +202,7 @@ cd gateway
 zkstack dev contracts
 
 zkstack ecosystem init \
+  --zksync-os \
   --update-submodules true \
   --l1-rpc-url ${L1_RPC_URL} \
   --deploy-ecosystem true \
@@ -213,6 +274,8 @@ zkstack chain create \
   --base-token-address 0x0000000000000000000000000000000000000001 \
   --base-token-price-nominator 1 \
   --base-token-price-denominator 1 \
+  --set-as-default false \
+  --evm-emulator false \
   --zksync-os
 ```
 
@@ -346,6 +409,8 @@ Notes:
 - There is no ready-made zkOS `testnet.yaml` / `mainnet.yaml` preset bundle equivalent to the old Era runtime override
   stack. `zksync-os-server` uses code defaults plus whatever YAML files you pass via `--config`.
 - On Syscoin testnet, confirmation-based Bitcoin DA finality is required because ChainLocks are not currently available.
+- If you use `batcher.bitcoin_da_rpc_user: __cookie__`, set `batcher.bitcoin_da_rpc_password` to the actual cookie secret
+  value from your Syscoin node cookie file. A placeholder value such as `dummy` will fail with HTTP 401.
 - The Era override key `state_keeper.max_pubdata_per_batch` does not map 1:1 to a zkOS runtime setting. On the OS side,
   the relevant knobs live under `sequencer` and `batcher`, especially `sequencer.block_pubdata_limit_bytes`,
   `batcher.blocks_per_batch_limit`, and `batcher.batch_timeout`.
@@ -463,3 +528,15 @@ At the topology level, the target shape is:
 
 - Gateway chain: `validium` pricing + `Bitcoin`
 - Child chain: `rollup` pricing + `RelayedL2Calldata`
+
+## Troubleshooting from real deployments
+
+- `invalid value 'cpu' for '--prover-mode'`:
+  - Current accepted values are `no-proofs` and `gpu`.
+- `unexpected argument '-a'` on `ecosystem create` or `chain create`:
+  - Remove `-a` from those commands.
+- Panic in `prompt/select.rs` with `Kind(NotConnected)` during non-interactive runs:
+  - This is caused by an unresolved interactive prompt in a non-TTY session.
+  - Most commonly this is the low-balance deployer/governor prompt in `ecosystem init` / CTM admin steps; fund above minimum first.
+- Build failure `error[E0603]: module common is private` in `zkstack_cli`:
+  - This indicates a branch mismatch / temporary regression. Pull the latest fix in your branch before deployment.
