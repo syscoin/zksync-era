@@ -1,10 +1,11 @@
 # SYSCOIN
 eth:
   sender:
-    wait_confirmations: 60 # Gateway is 10s block time so the txs will be finalized in 10 mins
+    wait_confirmations: 60 # Gateway is 10s block time so the batches have fixed finalization time of 10 mins
     pubdata_sending_mode: CALLDATA  # Will be converted to RelayedL2Calldata when settling on gateway
     proof_sending_mode: ONLY_REAL_PROOFS
 state_keeper:
+  block_commit_deadline_ms: 1200000 # 20 mins
   # L3 chains settling on gateway should balance overhead between compute and pubdata
   # since gateway storage is much cheaper than L1 blobs/calldata
   compute_overhead_part: 0.5  # Gateway has computational costs for processing L3 batches
