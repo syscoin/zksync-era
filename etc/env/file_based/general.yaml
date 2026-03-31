@@ -41,7 +41,7 @@ api:
 state_keeper:
   transaction_slots: 8192
   max_allowed_l2_tx_gas_limit: 15000000000
-  block_commit_deadline_ms: 1200000 # Default: 20 minutes
+  block_commit_deadline_ms: 2000
   miniblock_commit_deadline_ms: 1000
   miniblock_seal_queue_capacity: 10
   miniblock_max_payload_size: 1000000
@@ -85,11 +85,10 @@ circuit_breaker:
   http_req_retry_interval_sec: 2
 eth:
   sender:
-    wait_confirmations: 3 # Define fixed block count on L1 when L2 txs are finalized
     tx_poll_period: 30 s
     aggregate_tx_poll_period: 30 s
     max_txs_in_flight: 190
-    proof_sending_mode: ONLY_REAL_PROOFS
+    proof_sending_mode: SKIP_EVERY_PROOF
     max_aggregated_blocks_to_commit: 1
     max_aggregated_blocks_to_execute: 10
     aggregated_block_commit_deadline: 1
@@ -117,7 +116,7 @@ eth:
     time_in_mempool_multiplier_cap: 10
   watcher:
     confirmations_for_eth_event: 0
-    eth_node_poll_interval: 300
+    eth_node_poll_interval: 30 s
 
 snapshot_creator:
   # CHANGE: switch to inner tagged enum in object store
@@ -148,6 +147,9 @@ data_handler:
   proof_generation_timeout_in_secs: 18000
   gateway_api_url: http://127.0.0.1:3322
   proving_mode: PROVER_CLUSTER
+  proof_fetch_interval: 30 s
+  proof_gen_data_submit_interval: 30 s
+  fetch_zero_chain_id_proofs: false
 tee_proof_data_handler:
   http_port: 4320
   proof_generation_timeout_in_secs: 60
@@ -284,7 +286,7 @@ consensus:
   gossip_dynamic_inbound_limit: 100
 
 gateway_migrator:
-  eth_node_poll_interval: 300 ms
+  eth_node_poll_interval: 30 s
 
 eth_proof_manager:
   http_rpc_url: http://127.0.0.1:3050
